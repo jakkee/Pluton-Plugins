@@ -18,31 +18,31 @@ class StaffLogger:
             ini = Plugin.GetIni("Settings")
             ini.AddSetting("OwnerLog", "Commands", "false")
             ini.AddSetting("OwnerLog", "Chat", "false")
-            #ini.AddSetting("OwnerLog", "Looting", "false")
+            ini.AddSetting("OwnerLog", "Looting", "false")
             ini.AddSetting("AdminLog", "Commands", "true")
             ini.AddSetting("AdminLog", "Chat", "false")
-            #ini.AddSetting("AdminLog", "Looting", "true")
+            ini.AddSetting("AdminLog", "Looting", "true")
             ini.AddSetting("ModeratorLog", "Commands", "true")
             ini.AddSetting("ModeratorLog", "Chat", "false")
-            #ini.AddSetting("ModeratorLog", "Looting", "true")
+            ini.AddSetting("ModeratorLog", "Looting", "true")
             ini.AddSetting("PlayerLog", "Commands", "false")
             ini.AddSetting("PlayerLog", "Chat", "false")
-            #ini.AddSetting("PlayerLog", "Looting", "true")
+            ini.AddSetting("PlayerLog", "Looting", "true")
             ini.Save()
         ini = Plugin.GetIni("Settings")
         DataStore.Flush("StaffLogger")
         DataStore.Add("StaffLogger", "OwnerCommands", ini.GetSetting("OwnerLog", "Commands"))
         DataStore.Add("StaffLogger", "OwnerChat", ini.GetSetting("OwnerLog", "Chat"))
-        #DataStore.Add("StaffLogger", "OwnerLooting", ini.GetSetting("OwnerLog", "Looting"))
+        DataStore.Add("StaffLogger", "OwnerLooting", ini.GetSetting("OwnerLog", "Looting"))
         DataStore.Add("StaffLogger", "AdminCommands", ini.GetSetting("AdminLog", "Commands"))
         DataStore.Add("StaffLogger", "AdminChat", ini.GetSetting("AdminLog", "Chat"))
-        #DataStore.Add("StaffLogger", "AdminLooting", ini.GetSetting("AdminLog", "Looting"))
+        DataStore.Add("StaffLogger", "AdminLooting", ini.GetSetting("AdminLog", "Looting"))
         DataStore.Add("StaffLogger", "ModeratorCommands", ini.GetSetting("ModeratorLog", "Commands"))
         DataStore.Add("StaffLogger", "ModeratorChat", ini.GetSetting("ModeratorLog", "Chat"))
-        #DataStore.Add("StaffLogger", "ModeratorLooting", ini.GetSetting("ModeratorLog", "Looting"))
+        DataStore.Add("StaffLogger", "ModeratorLooting", ini.GetSetting("ModeratorLog", "Looting"))
         DataStore.Add("StaffLogger", "PlayerCommands", ini.GetSetting("PlayerLog", "Commands"))
         DataStore.Add("StaffLogger", "PlayerChat", ini.GetSetting("PlayerLog", "Chat"))
-        #DataStore.Add("StaffLogger", "PlayerLooting", ini.GetSetting("PlayerLog", "Looting"))
+        DataStore.Add("StaffLogger", "PlayerLooting", ini.GetSetting("PlayerLog", "Looting"))
 
     def On_Command(self, CommandEvent):
         Player = CommandEvent.User
@@ -60,6 +60,14 @@ class StaffLogger:
             ini = Plugin.GetIni("Log")
             ini.AddSetting(arg[1], "[" + str(System.DateTime.Now) + "]", Player.SteamID + "=" + Player.Name + arg[2] + ChatEvent.OriginalText)
             ini.Save()
+
+    """def On_LootingPlayer(self, PlayerLootEvent):
+        Player = ChatEvent.User
+        arg = self.usercheck(Player, "Chat")
+        if arg[0]:
+            ini = Plugin.GetIni("Log")
+            ini.AddSetting(arg[1], "[" + str(System.DateTime.Now) + "]", Player.SteamID + "=" + Player.Name + arg[2] + ChatEvent.OriginalText)
+            ini.Save()"""
 
     def argsToText(self, args):
         text = str.join(" ", args)
@@ -106,7 +114,7 @@ class StaffLogger:
                 return True, "PlayerLog", " said: "
             else:
                 return False, None, None
-        """elif typee == "Loot":
+        elif typee == "Loot":
             if Player.Owner:
                 if DataStore.Get("StaffLogger", "OwnerLooting") == "true":
                     return True, "OwnerLog", " looted: "
@@ -125,4 +133,4 @@ class StaffLogger:
             elif DataStore.Get("StaffLogger", "PlayerLooting") == "true":
                 return True, "PlayerLog", " looted: "
             else:
-                return False, None, None"""
+                return False, None, None
