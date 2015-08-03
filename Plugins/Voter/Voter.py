@@ -1,6 +1,6 @@
 __title__ = 'Voter'
 __author__ = 'Jakkee'
-__version__ = '1.0'
+__version__ = '1.1'
 
 import clr
 clr.AddReferenceByPartialName("Pluton")
@@ -23,6 +23,8 @@ class Voter:
             ini.AddSetting("Day/Night", "Percentage Needed", "60%")
             ini.AddSetting("Day/Night", "Cooldown in seconds", "60")
             ini.AddSetting("Day/Night", "Voting length in seconds", "60")
+            ini.AddSetting("Day/Night", "Time to change to", "6")
+            ini.AddSetting("Day/Night", "Can use command during day?", "false")
             ini.AddSetting("Day/Night", "Players can use?", "true")
             ini.AddSetting("PlayerBan", "Min players online", "5")
             ini.AddSetting("PlayerBan", "Percentage Needed", "75%")
@@ -40,17 +42,23 @@ class Voter:
             ini.AddSetting("AirDrop", "Voting length in seconds", "60")
             ini.AddSetting("AirDrop", "Players can use?", "true")
             ini.Save()
-        if self.target is not None:
-            Server.Broadcast("------------- Voter -------------")
-            Server.Broadcast("Server has reloaded and cancelled voting...")
+        if DataStore.Get("Vote", "type") is not None:
+            Server.Broadcast("Server has reloaded which has resulted in stopping the vote")
             Server.Broadcast("Please do not complain to the server staff!")
-            Server.Broadcast("---------------------------------")
             self.removetarget()
         DataStore.Flush("VoteNO")
         DataStore.Flush("VoteYES")
         DataStore.Flush("Vote")
         self.killtimer("VotingTimer")
         ini = Plugin.GetIni("Settings")
+#Day/Night can use command during day
+        DataStore.Add("Vote", "D/N.CanUse", ini.GetSetting("Day/Night", "Can use command during day?"))
+#Day/Night change time
+        i = self.cn(ini.GetSetting("Day/Night", "Time to change to"))
+        if i is not None:
+            DataStore.Add("Vote", "D/N.WorldTime", i)
+        else:
+            DataStore.Add("Vote", "D/N.WorldTime", 6)
 #Players can use?
         DataStore.Add("Vote", "D/N.PCU", ini.GetSetting("Day/Night", "Players can use?"))
         DataStore.Add("Vote", "PB.PCU", ini.GetSetting("PlayerBan", "Players can use?"))
@@ -169,44 +177,10 @@ class Voter:
             self.targetid = None
             self.targetip = None
 
-    def disconnectplayer(self, reason):
-        try:
-            self.target.Kick(reason)
-        except:
-            pass
-
     def logban(self, reason):
         try:
-            if not Plugin.IniExists("Bans"):
-                Plugin.CreateIni("Bans")
-                ini = Plugin.GetIni("Bans")
-                ini.Save()
-            ini = Plugin.GetIni("Bans")
-            ini.AddSetting("BannedList", "ID:" + str(self.targetid) + " IP:" + self.targetip + " ", " " + self.targetname + " [" + Plugin.GetDate() + "|" + Plugin.GetTime() + "] Reason: " + reason)
-            ini.Save()
-            self.disconnectplayer("You have been banned!")
+            target.Ban(reason)
             self.removetarget()
-        except:
-            pass
-
-    def On_ClientAuth(self, AuthEvent):
-        if self.isbanned(AuthEvent.GameID, AuthEvent.IP[:-6]):
-            AuthEvent.Reject("VOTER: Players have voted for you to be banned!")
-
-    def isbanned(self, id, ip):
-        try:
-            if not Plugin.IniExists("Bans"):
-                Plugin.CreateIni("Bans")
-                ini = Plugin.GetIni("Bans")
-                ini.Save()
-            bans = Plugin.GetIni("Bans")
-            key = bans.EnumSection("BannedList")
-            for keys in key:
-                if ip in keys or id in keys:
-                    return True
-                continue
-            else:
-                return False
         except:
             pass
 
@@ -223,80 +197,75 @@ class Voter:
     def VoteTimerCallback(self, TimedEvent):
         self.killtimer("VoteTimer")
         total = DataStore.Count("VoteYES") + DataStore.Count("VoteNO")
-        pyes = round((DataStore.Count("VoteYES") / total) * 100, 2)
-        pno = round((DataStore.Count("VoteNO") / total) * 100, 2)
+        try:
+            pyes = round((DataStore.Count("VoteYES") / total) * 100, 2)
+        except:
+            pyes = 0
+        try:
+            pno = round((DataStore.Count("VoteNO") / total) * 100, 2)
+        except:
+            pno = 0
         ttype = DataStore.Get("Vote", "type")
+        ttype = ttype.split(':')
         if ttype == "D/N":
             min = DataStore.Get("Vote", "D/N.Min")
             if pyes > min:
-                World.Time = 6
-                Server.Broadcast("------------- Voter -------------")
+                World.Time = DataStore.Get("Vote", "D/N.WorldTime", 6)
                 Server.Broadcast("The results are in and the servers time has been changed to Day!")
-                Server.Broadcast(str(pyes) + "% voted for Day")
-                Server.Broadcast("---------------------------------")
             else:
-                Server.Broadcast("------------- Voter -------------")
                 Server.Broadcast("The results are in and the servers time has not been changed!")
-                Server.Broadcast(str(pno) + "% voted for Night")
-                Server.Broadcast("---------------------------------")
+            Server.Broadcast(str(pyes) + "% voted for Day")
+            Server.Broadcast(str(pno) + "% voted for Night")
             DataStore.Add("Vote", "D/N.SysTick", System.Environment.TickCount)
         elif ttype == "PB":
             min = DataStore.Get("Vote", "PB.Min")
             if pyes >= min:
-                Server.Broadcast("------------- Voter -------------")
                 Server.Broadcast("The results are in and " + self.targetname + " has been banned from the server!")
-                Server.Broadcast(str(pyes) + "% voted for yes")
-                Server.Broadcast(str(pno) + "% voted for no")
-                Server.Broadcast("---------------------------------")
+                Server.Broadcast(str(pyes) + "% voted for Yes")
+                Server.Broadcast(str(pno) + "% voted for No")
                 self.logban(str(pyes) + "% voted for yes")
             else:
-                Server.Broadcast("------------- Voter -------------")
                 Server.Broadcast("The results are in and " + self.targetname + " has not been banned from the server!")
-                Server.Broadcast(str(pyes) + "% voted for yes")
-                Server.Broadcast(str(min) + "% was needed for a ban")
-                Server.Broadcast("---------------------------------")
+                Server.Broadcast(str(pyes) + "% voted for Yes")
+                Server.Broadcast(str(min) + "% was needed for a Ban")
             DataStore.Add("Vote", "PB.SysTick", System.Environment.TickCount)
         elif ttype == "PK":
             min = DataStore.Get("Vote", "PK.Min")
             if pyes >= min:
-                Server.Broadcast("------------- Voter -------------")
                 Server.Broadcast("The results are in and " + self.targetname + " has been kicked from the server!")
-                Server.Broadcast(str(pyes) + "% voted for yes")
-                Server.Broadcast(str(pno) + "% voted for no")
-                Server.Broadcast("---------------------------------")
+                Server.Broadcast(str(pyes) + "% voted for Yes")
+                Server.Broadcast(str(pno) + "% voted for No")
                 self.disconnectplayer("Players have voted to kick you!")
             else:
-                Server.Broadcast("------------- Voter -------------")
                 Server.Broadcast("The results are in and " + self.targetname + " has not been kicked from the server!")
-                Server.Broadcast(str(pyes) + "% voted for yes")
-                Server.Broadcast(str(min) + "% was needed for a kick")
-                Server.Broadcast("---------------------------------")
+                Server.Broadcast(str(pyes) + "% voted for Yes")
+                Server.Broadcast(str(min) + "% was needed for a Kick")
             DataStore.Add("Vote", "PK.SysTick", System.Environment.TickCount)
+        elif ttype[0] == "CUSTOM":
+                Server.Broadcast("The results are in for: " + ttype[1])
+                Server.Broadcast(str(pyes) + "% voted for Yes")
+                Server.Broadcast(str(pno) + "% voted for No")
         else:
             min = DataStore.Get("Vote", "AD.Min")
             if pyes > min:
                 World.AirDrop()
-                Server.Broadcast("------------- Voter -------------")
                 Server.Broadcast("The results are in and an AirDrop is on its way!")
-                Server.Broadcast(str(pyes) + "% voted for yes")
-                Server.Broadcast("---------------------------------")
+                Server.Broadcast(str(pyes) + "% voted for Yes")
             else:
-                Server.Broadcast("------------- Voter -------------")
                 Server.Broadcast("The results are in and an AirDrop has not been called in!")
-                Server.Broadcast(str(pno) + "% voted for Night")
-                Server.Broadcast("---------------------------------")
+                Server.Broadcast(str(pno) + "% voted for No")
             DataStore.Add("Vote", "AD.SysTick", System.Environment.TickCount)
         DataStore.Remove("Vote", "type")
         self.removevotes()
 
     def playerscheck(self, Player, ttype):
-        if DataStore.Get("Vote", ttype + ".PCU") == "true":
-            return True
-        elif Player.Owner:
+        if Player.Owner:
             return True
         elif Player.Admin:
             return True
         elif Player.Moderator:
+            return True
+        elif DataStore.Get("Vote", ttype + ".PCU") == "true":
             return True
         else:
             return False
@@ -306,31 +275,31 @@ class Voter:
         args = cmd.args
         if cmd.cmd == "vote":
             if len(args) == 0:
-                Player.Message("------------ Voter ------------")
-                Player.Message("/vote - Shows help")
-                Player.Message("/vote yes - Votes for yes")
-                Player.Message("/vote no - votes for no")
+                Player.Message("/vote [yes/no] - Votes for yes or no")
                 if self.playerscheck(Player, "D/N"):
-                    Player.Message("/vote day - Vote for world time")
+                    Player.Message("/vote day - Vote for day")
                 if self.playerscheck(Player, "AD"):
                     Player.Message("/vote airdrop - Vote for an airdrop")
                 if self.playerscheck(Player, "PB"):
                     Player.Message("/vote ban [Name] - Vote to ban a player")
                 if self.playerscheck(Player, "PK"):
                     Player.Message("/vote kick [Name] - Vote to kick a player")
-                Player.Message("-------------------------------")
+                if self.playerscheck(Player, "CUSTOM"):
+                    Player.Message('/vote custom [Insert a question here] - Ask a custom question')
+                if self.playerscheck(Player, "STOP"):
+                    Player.Message('/vote stop - Stops the current vote')
             else:
                 if args[0] == "yes":
                     if Plugin.GetTimer("VoteTimer") is not None:
                         if DataStore.Get("VoteNO", Player.SteamID) is not None:
                             DataStore.Remove("VoteNO", Player.SteamID)
                             DataStore.Add("VoteYES", Player.SteamID, "yes")
-                            Player.Message("You have changed your vote to yes")
+                            Player.Message("You have changed your vote to Yes")
                         elif DataStore.Get("VoteYES", Player.SteamID) is not None:
-                            Player.Message("You have already voted for yes")
+                            Player.Message("You have already voted for Yes")
                         else:
                             DataStore.Add("VoteYES", Player.SteamID, "yes")
-                            Player.Message("You have voted for yes")
+                            Player.Message("You have voted for Yes")
                     else:
                         Player.Message("There is no vote in progress!")
                 elif args[0] == "no":
@@ -338,14 +307,24 @@ class Voter:
                         if DataStore.Get("VoteYES", Player.SteamID) is not None:
                             DataStore.Remove("VoteYES", Player.SteamID)
                             DataStore.Add("VoteNO", Player.SteamID, "no")
-                            Player.Message("You have changed your vote to no")
+                            Player.Message("You have changed your vote to No")
                         elif DataStore.Get("VoteNO", Player.SteamID) is not None:
-                            Player.Message("You have already voted for no")
+                            Player.Message("You have already voted for No")
                         else:
                             DataStore.Add("VoteNO", Player.SteamID, "no")
-                            Player.Message("You have voted for no")
+                            Player.Message("You have voted for No")
                     else:
                         Player.Message("There is no vote in progress!")
+                elif args[0] == "stop":
+                    if self.playerscheck(Player, "STOP"):
+                        if Plugin.GetTimer("VoteTimer") is not None:
+                            DataStore.Remove("Vote", "type")
+                            self.removevotes()
+                            Server.Broadcast("An Admin has stopped the current vote!")
+                        else:
+                            Player.Message("There currently is no vote running!")
+                    else:
+                        Player.Message("You are not allowed to use this command!")
                 elif args[0] == "airdrop":
                     if self.playerscheck(Player, "AD"):
                         if len(Server.Players) >= DataStore.Get("Vote", "AD.MPlayers"):
@@ -361,11 +340,9 @@ class Voter:
                                     try:
                                         Plugin.CreateTimer("VoteTimer", DataStore.Get("Vote", "AD.VoteLength")).Start()
                                         DataStore.Add("Vote", "type", "AD")
-                                        Server.Broadcast("------------- Voter -------------")
                                         Server.Broadcast("Would you like an airdrop?")
                                         Server.Broadcast("You have " + str(DataStore.Get("Vote", "AD.VoteLength") / 1000) + " seconds to vote")
-                                        Server.Broadcast("How to vote: /vote [yes/no]")
-                                        Server.Broadcast("---------------------------------")
+                                        Server.Broadcast("How to vote: /vote [Yes/No]")
                                     except:
                                         Player.Message("Error, Try again")
                                 else:
@@ -379,42 +356,50 @@ class Voter:
                     else:
                         Player.Message("You are not allowed to use this command!")
                 elif args[0] == "day":
+                    canuse = False
                     if self.playerscheck(Player, "D/N"):
-                        if len(Server.Players) >= DataStore.Get("Vote", "D/N.MPlayers"):
-                            if Plugin.GetTimer("VoteTimer") is None:
-                                waittime = DataStore.Get("Vote", "D/N.Cooldown")
-                                time = DataStore.Get("Vote", "D/N.SysTick")
-                                if time is None:
-                                    time = 0
+                        if DataStore.Get("Vote", "D/N.CanUse") == "true":
+                            canuse = True
+                        if 17 < World.Time or World.Time < 5 or canuse:
+                            if len(Server.Players) >= DataStore.Get("Vote", "D/N.MPlayers"):
+                                if Plugin.GetTimer("VoteTimer") is None:
+                                    waittime = DataStore.Get("Vote", "D/N.Cooldown")
+                                    time = DataStore.Get("Vote", "D/N.SysTick")
+                                    if time is None:
+                                        time = 0
+                                    else:
+                                        time = int(time)
+                                    calc = System.Environment.TickCount - time
+                                    if calc >= waittime or Player.Owner or Player.Admin:
+                                        try:
+                                            DataStore.Add("Vote", "type", "D/N")
+                                            Plugin.CreateTimer("VoteTimer", DataStore.Get("Vote", "D/N.VoteLength")).Start()
+                                            Server.Broadcast("Would you like the time to be morning?")
+                                            Server.Broadcast("You have " + str(DataStore.Get("Vote", "D/N.VoteLength") / 1000) + " seconds to vote")
+                                            Server.Broadcast("How to vote: /vote [Yes/No]")
+                                        except:
+                                            Player.Message("Error, Try again")
+                                    else:
+                                        workingout = (round(waittime / 1000, 2) / 60) - round(int(calc) / 1000, 2) / 60
+                                        current = round(workingout, 2)
+                                        Player.Message(str(current) + " Minutes remaining before you can use this.")
                                 else:
-                                    time = int(time)
-                                calc = System.Environment.TickCount - time
-                                if calc >= waittime or Player.Owner or Player.Admin:
-                                    try:
-                                        DataStore.Add("Vote", "type", "D/N")
-                                        Plugin.CreateTimer("VoteTimer", DataStore.Get("Vote", "D/N.VoteLength")).Start()
-                                        Server.Broadcast("------------- Voter -------------")
-                                        Server.Broadcast("Would you like the time to be morning?")
-                                        Server.Broadcast("You have " + str(DataStore.Get("Vote", "D/N.VoteLength") / 1000) + " seconds to vote")
-                                        Server.Broadcast("How to vote: /vote [yes/no]")
-                                        Server.Broadcast("---------------------------------")
-                                    except:
-                                        Player.Message("Error, Try again")
-                                else:
-                                    workingout = (round(waittime / 1000, 2) / 60) - round(int(calc) / 1000, 2) / 60
-                                    current = round(workingout, 2)
-                                    Player.Message(str(current) + " Minutes remaining before you can use this.")
+                                    Player.Message("There is already vote in progress!")
                             else:
-                                Player.Message("There is already vote in progress!")
+                                Player.Message("Not enough players online")
                         else:
-                            Player.Message("Not enough players online")
+                            Player.Message("Wait until its night!")
                     else:
                         Player.Message("You are not allowed to use this command!")
                 elif args[0] == "ban":
                     if self.playerscheck(Player, "PB"):
                         if len(Server.Players) >= DataStore.Get("Vote", "PB.MPlayers"):
                             if Plugin.GetTimer("VoteTimer") is None:
-                                ban = self.CheckV(Player, args[1])
+                                try:
+                                    ban = self.CheckV(Player, args[1])
+                                except:
+                                    Player.Message("Usage: /vote ban [Players Name]")
+                                    return
                                 if ban is not None:
                                     if ban.Name is not Player.Name:
                                         if not ban.Owner or ban.Admin or ban.Moderator:
@@ -433,11 +418,9 @@ class Voter:
                                                     self.targetid = ban.GameID
                                                     DataStore.Add("Vote", "type", "PB")
                                                     Plugin.CreateTimer("VoteTimer", DataStore.Get("Vote", "PB.VoteLength")).Start()
-                                                    Server.Broadcast("------------- Voter -------------")
                                                     Server.Broadcast("Should we ban: " + ban.Name + "?")
                                                     Server.Broadcast("You have " + str(DataStore.Get("Vote", "PB.VoteLength") / 1000) + " seconds to vote")
-                                                    Server.Broadcast("How to vote: /vote [yes/no]")
-                                                    Server.Broadcast("---------------------------------")
+                                                    Server.Broadcast("How to vote: /vote [Yes/No]")
                                                     ban.Message("If you disconnect you WILL be banned!")
                                                 except:
                                                     Player.Message("Error, Try again")
@@ -461,7 +444,11 @@ class Voter:
                     if self.playerscheck(Player, "PK"):
                         if len(Server.Players) >= DataStore.Get("Vote", "PK.MPlayers"):
                             if Plugin.GetTimer("VoteTimer") is None:
-                                kick = self.CheckV(Player, args[1])
+                                try:
+                                    kick = self.CheckV(Player, args[1])
+                                except:
+                                    Player.Message("Usage: /vote kick [Players Name]")
+                                    return
                                 if kick is not None:
                                     if kick.Name is not Player.Name:
                                         if not kick.Owner or kick.Admin or kick.Moderator:
@@ -480,11 +467,9 @@ class Voter:
                                                     self.targetid = kick.GameID
                                                     DataStore.Add("Vote", "type", "PK")
                                                     Plugin.CreateTimer("VoteTimer", DataStore.Get("Vote", "PK.VoteLength")).Start()
-                                                    Server.Broadcast("------------- Voter -------------")
                                                     Server.Broadcast("Should we kick: " + kick.Name + "?")
                                                     Server.Broadcast("You have " + str(DataStore.Get("Vote", "PK.VoteLength") / 1000) + " seconds to vote")
-                                                    Server.Broadcast("How to vote: /vote [yes/no]")
-                                                    Server.Broadcast("---------------------------------")
+                                                    Server.Broadcast("How to vote: /vote [Yes/No]")
                                                 except:
                                                     Player.Message("Error, Try again")
                                             else:
@@ -494,7 +479,7 @@ class Voter:
                                         else:
                                             Player.Message("That player is a staff member!")
                                     else:
-                                        Player.Message("You can not ban yourself!")
+                                        Player.Message("You can not kick yourself!")
                                 else:
                                     return
                             else:
@@ -502,9 +487,43 @@ class Voter:
                         else:
                             Player.Message("Not enough players online")
                     else:
-                        Player.Message("Incorrect argument, Try again.")
+                        Player.Message("You are not allowed to use this command!")
+                elif args[0] == "custom":
+                    if self.playerscheck(Player, "Custom"):
+                        if Plugin.GetTimer("VoteTimer") is None:
+                            if len(args) > 1:
+                                question = self.joinquestion(args)
+                                DataStore.Add("Vote", "type", "CUSTOM:" + question)
+                                Plugin.CreateTimer("VoteTimer", 60000).Start()
+                                Server.Broadcast("An admin asked:" + question)
+                                Server.Broadcast("You have 60 seconds to vote")
+                                Server.Broadcast("How to vote: /vote [Yes/No]")
+                            else:
+                                Player.Message('Usage: /vote custom [Insert a question here]')
+                        else:
+                            Player.Message("There is already vote in progress!")
+                    else:
+                        Player.Message("You are not allowed to use this command!")
                 else:
-                    Player.Message("You are not allowed to use this command!")
+                    Player.Message("/vote [yes/no] - Votes for yes or no")
+                    if self.playerscheck(Player, "D/N"):
+                        Player.Message("/vote day - Vote for day")
+                    if self.playerscheck(Player, "AD"):
+                        Player.Message("/vote airdrop - Vote for an airdrop")
+                    if self.playerscheck(Player, "PB"):
+                        Player.Message("/vote ban [Name] - Vote to ban a player")
+                    if self.playerscheck(Player, "PK"):
+                        Player.Message("/vote kick [Name] - Vote to kick a player")
+                    if self.playerscheck(Player, "CUSTOM"):
+                        Player.Message('/vote custom [Insert a question here] - Ask a custom question')
+                    if self.playerscheck(Player, "STOP"):
+                        Player.Message('/vote stop - Stops the current vote')
+        return
+
+    def joinquestion(self, args):
+        args[0] = None
+        s = str.Join(" ", args)
+        return s
 
     """
         CheckV Assistants
@@ -522,7 +541,7 @@ class Voter:
         Upgraded by DreTaX
         Can Handle Single argument and Array args.
         V5.0
-        --REMOVED OFFLINE PLAYER CHECK (Useless code for this plugin)--
+        --REMOVED OFFLINE PLAYER CHECK (Unused code for this plugin)--
     """
 
     def CheckV(self, Player, args):
