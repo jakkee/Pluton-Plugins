@@ -1,6 +1,7 @@
 __title__ = 'RemoveTool'
 __author__ = 'Jakkee'
-__version__ = '1.1.1'
+__about__ = 'Remove entitys'
+__version__ = '1.1.2'
 
 import clr
 clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp", "UnityEngine")
@@ -9,8 +10,33 @@ import BuildingPrivlidge
 import ItemManager
 import UnityEngine
 
+
  
 class RemoveTool:
+    Data = {}
+    Data['woodbox_deployed.prefab'] = 'box.wooden'
+    Data['large_woodbox_deployed.prefab'] = 'box.wooden.large'
+    Data['campfire_deployed.prefab'] = 'campfire'
+    Data['crudeoutput.prefab'] = 'mining.pumpjack'
+    Data['hopperoutput.prefab'] = 'mining.guarry'
+    Data['cupboard.tool.deployed.prefab'] = 'cupboard.tool'
+    Data['furnace_deployed.prefab'] = 'furnace'
+    Data['lantern_deployed.prefab'] = 'lantern'
+    Data['large_furnace_deployed.prefab'] = 'large.furnace'
+    Data['repairbench_deployed.prefab'] = 'box_repair.bench'
+    Data['researchtable_deployed.prefab'] = 'research.table'
+    Data['sign.huge.wood.prefab'] = 'sign.wooden.huge'
+    Data['sign.large.wood.prefab'] = 'sign.wooden.large'
+    Data['sign.medium.wood.prefab'] = 'sign.wooden.medium'
+    Data['sign.small.wood.prefab'] = 'sign.wooden.small'
+    Data['sleepingbag_leather_deployed.prefab'] = 'sleepingbag'
+    Data['refinery_small_deployed.prefab'] = 'small.oil.refinery'
+    Data['beartrap.prefab'] = 'trap.bear'
+    Data['landmine.prefab'] = 'trap.landmine'
+    Data['floor_spikes.prefab'] = 'spikes.floor'
+    Data['water_catcher_large.prefab'] = 'water.catcher.large'
+    Data['water_catcher_small.prefab'] = 'water.catcher.small'
+
     def Tryint(self, Arg):
         try:
             time = int(Arg)
@@ -126,34 +152,23 @@ class RemoveTool:
                                 return
                         except:
                             try:
-                                item = ItemManager.FindItemDefinition(CombatEntityHurtEvent.Victim.baseEntity.LookupShortPrefabName())
+                                name = CombatEntityHurtEvent.Victim.baseEntity.LookupShortPrefabName().replace('_', '.')
+                                name = name.replace('.deployed', '')
+                                name = name.replace('.prefab', '')
+                                item = ItemManager.FindItemDefinition(name)
                                 Player.Inventory.Add(item.itemid, 1)
                                 Util.DestroyEntity(CombatEntityHurtEvent.Victim.baseEntity)
                             except:
-                                Data = {}
-                                Data['woodbox_deployed'] = 'box_wooden'
-                                Data['large_woodbox_deployed'] = 'box_wooden_large'
-                                Data['campfire_deployed'] = 'campfire'
-                                Data['crudeoutput'] = 'mining.pumpjack'
-                                Data['hopperoutput'] = 'mining.guarry'
-                                Data['cupboard.tool.deployed'] = 'cupboard.tool'
-                                Data['furnace_deployed'] = 'furnace'
-                                Data['lantern_deployed'] = 'lantern'
-                                Data['large_furnace_deployed'] = 'large_furnace'
-                                Data['repairbench_deployed'] = 'box_repair_bench'
-                                Data['researchtable_deployed'] = 'research_table'
-                                Data['sign.huge.wood'] = 'sign.wooden.huge'
-                                Data['sign.large.wood'] = 'sign.wooden.large'
-                                Data['sign.medium.wood'] = 'sign.wooden.medium'
-                                Data['sign.small.wood'] = 'sign.wooden.small'
-                                Data['sleepingbag_leather_deployed'] = 'sleepingbag'
-                                Data['refinery_small_deployed'] = 'small_oil_refinery'
-                                Data['beartrap'] = 'trap_bear'
-                                Data['landmine'] = 'trap_landmine'
-                                Data['floor_spikes'] = 'spikes.floor'
-                                Util.DestroyEntity(CombatEntityHurtEvent.Victim.baseEntity)
-                                item = ItemManager.FindItemDefinition(Data[CombatEntityHurtEvent.Victim.baseEntity.LookupShortPrefabName()])
-                                Player.Inventory.Add(item.itemid, 1)
+                                try:
+                                    #Backup, Checks dictionary if above fails
+                                    item = ItemManager.FindItemDefinition(self.Data[CombatEntityHurtEvent.Victim.baseEntity.LookupShortPrefabName()])
+                                    if item is not None:
+                                        Player.Inventory.Add(item.itemid, 1)
+                                        Util.DestroyEntity(CombatEntityHurtEvent.Victim.baseEntity)
+                                    else:
+                                        Player.Message("You can not remove this item!")
+                                except:
+                                    Player.Message("You can not remove this item!")
                         return
                     else:
                         Player.MessageFrom("RemoveTool", DataStore.Get("RemoveTool", "OFR"))
