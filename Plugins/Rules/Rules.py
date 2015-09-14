@@ -1,5 +1,6 @@
 __title__ = 'Rules'
 __author__ = 'Jakkee'
+__about__ = 'Displays rules to players'
 __version__ = '1.0.3'
 
 import clr

@@ -1,5 +1,6 @@
 __title__ = 'ScrubMuter'
 __author__ = 'Jakkee'
+__about__ = 'Mute players'
 __version__ = '1.0.1'
 
 import clr

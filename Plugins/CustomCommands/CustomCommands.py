@@ -1,5 +1,6 @@
 __title__ = 'CustomCommands'
 __author__ = 'Jakkee'
+__about__ = 'Have commands your way'
 __version__ = '1.0'
 
 import clr

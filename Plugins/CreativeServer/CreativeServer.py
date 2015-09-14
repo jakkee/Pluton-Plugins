@@ -1,5 +1,6 @@
 __title__ = 'CreativeServer'
 __author__ = 'Jakkee'
+__about__ = 'Upgrade building blocks'
 __version__ = '1.0'
  
 import clr

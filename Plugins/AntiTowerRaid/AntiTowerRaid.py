@@ -1,5 +1,6 @@
 __title__ = 'AntiTowerRaid'
 __author__ = 'Jakkee'
+__about__ = 'Stops raid towers'
 __version__ = '1.0'
  
 import clr

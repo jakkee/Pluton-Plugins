@@ -1,5 +1,6 @@
 __title__ = 'Shop'
 __author__ = 'Jakkee'
+__about__ = 'Buy/Sell items'
 __version__ = '1.0'
  
 import clr

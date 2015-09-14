@@ -1,5 +1,6 @@
 __title__ = 'Voter'
 __author__ = 'Jakkee'
+__about__ = 'Vote for many things'
 __version__ = '1.1'
 
 import clr

@@ -1,5 +1,6 @@
 __title__ = 'CountryBlackList'
 __author__ = 'Jakkee'
+__about__ = 'Blacklist countries'
 __version__ = '1.0'
 
 import clr

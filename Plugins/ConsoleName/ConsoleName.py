@@ -1,5 +1,6 @@
 __title__ = 'ConsoleName'
 __author__ = 'Jakkee'
+__about__ = 'Changes server name'
 __version__ = '1.0.1'
 
 import clr

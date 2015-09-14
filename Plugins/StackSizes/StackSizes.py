@@ -1,5 +1,6 @@
 __title__ = 'StackSizes'
 __author__ = 'Jakkee'
+__about__ = 'Changes stack sizes'
 __version__ = '1.0.5'
 
 import clr
