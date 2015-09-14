@@ -1,5 +1,6 @@
 __title__ = 'StaffLogger'
 __author__ = 'Jakkee'
+__about__ = 'Advanced logger'
 __version__ = '1.0'
 
 import clr
@@ -46,7 +47,7 @@ class StaffLogger:
 
     def On_Command(self, CommandEvent):
         Player = CommandEvent.User
-        arg = self.usercheck(Player, "Command")
+        arg = self.usercheck(Player, 0)
         if arg[0]:
             args = self.argsToText(CommandEvent.args)
             ini = Plugin.GetIni("Log")
@@ -55,26 +56,26 @@ class StaffLogger:
 
     def On_Chat(self, ChatEvent):
         Player = ChatEvent.User
-        arg = self.usercheck(Player, "Chat")
+        arg = self.usercheck(Player, 1)
         if arg[0]:
             ini = Plugin.GetIni("Log")
             ini.AddSetting(arg[1], "[" + str(System.DateTime.Now) + "]", Player.SteamID + "=" + Player.Name + arg[2] + ChatEvent.OriginalText)
             ini.Save()
 
-    """def On_LootingPlayer(self, PlayerLootEvent):
-        Player = ChatEvent.User
-        arg = self.usercheck(Player, "Chat")
+    def On_LootingPlayer(self, PlayerLootEvent):
+        Player = PlayerLootEvent.Looter
+        arg = self.usercheck(Player, 2)
         if arg[0]:
             ini = Plugin.GetIni("Log")
-            ini.AddSetting(arg[1], "[" + str(System.DateTime.Now) + "]", Player.SteamID + "=" + Player.Name + arg[2] + ChatEvent.OriginalText)
-            ini.Save()"""
+            ini.AddSetting(arg[1], "[" + str(System.DateTime.Now) + "]", Player.SteamID + "=" + Player.Name + arg[2] + PlayerLootEvent.Target.Name + "=" + PlayerLootEvent.Target.SteamID)
+            ini.Save()
 
     def argsToText(self, args):
         text = str.join(" ", args)
         return text
 
     def usercheck(self, Player, typee):
-        if typee == "Command":
+        if typee == 0:
             if Player.Owner:
                 if DataStore.Get("StaffLogger", "OwnerCommands") == "true":
                     return True, "OwnerLog", " typed: /"
@@ -94,7 +95,7 @@ class StaffLogger:
                 return True, "PlayerLog", " typed: /"
             else:
                 return False, None, None
-        elif typee == "Chat":
+        elif typee == 1:
             if Player.Owner:
                 if DataStore.Get("StaffLogger", "OwnerChat") == "true":
                     return True, "OwnerLog", " said: "
@@ -114,7 +115,7 @@ class StaffLogger:
                 return True, "PlayerLog", " said: "
             else:
                 return False, None, None
-        elif typee == "Loot":
+        elif typee == 2:
             if Player.Owner:
                 if DataStore.Get("StaffLogger", "OwnerLooting") == "true":
                     return True, "OwnerLog", " looted: "
