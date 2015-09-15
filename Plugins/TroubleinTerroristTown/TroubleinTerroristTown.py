@@ -105,7 +105,7 @@ class TroubleinTerroristTown:
             number = int(Arg)
             return number
         except Exception, error:
-            Plugin.Log("ErrorLog", error)
+            Plugin.Log("ErrorLog", "Tryint: " + str(error))
             return None
 
     def endgame(self, winner):
@@ -117,6 +117,7 @@ class TroubleinTerroristTown:
 
     def ResetCallback(self, timer):
         timer.Kill()
+        Plugin.GetTimer("MatchLength").Kill()
         DataStore.Remove("TTT", "On_PlayerWakeUp")
         for Player in Server.ActivePlayers:
             DataStore.Remove("TTT", "USER:" + Player.SteamID)
@@ -147,11 +148,13 @@ class TroubleinTerroristTown:
                 Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers").Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
             else:
                 timer.Kill()
+                for Player in Server.SleepingPlayers:
+                    Player.basePlayer.Die()
                 self.setTerrorist()
                 self.setInnocent()
                 DataStore.Add("TTT", "On_PlayerWakeUp", True)
                 for Player in Server.ActivePlayers:
-                    Player.basePlayer.Die()
+                    Player.Kill()
                     Player.basePlayer.Respawn()
                     Player.basePlayer.metabolism.calories.value = 1000
                     Player.basePlayer.metabolism.hydration.value = 1000
@@ -260,8 +263,9 @@ class TroubleinTerroristTown:
             totalplayers = Server.ActivePlayers
             self.amountofterrorists = round(len(totalplayers) / 3, 0)
             need = round(len(totalplayers) / 3, 0)
-            Util.Log(str(need))
-            Util.Log(str(need.split(".")[0]))
+            need = str(need).split(".")[0]
+            Util.Log(need)
+            need = int(need)
             if need == 0:
                 self.amountofterrorists = 1
                 need = 1
@@ -280,7 +284,7 @@ class TroubleinTerroristTown:
                     continue
         except Exception, error:
             Server.Broadcast("Error setting terrorists, Reload the server!")
-            Plugin.Log("ErrorLog", error)
+            Plugin.Log("ErrorLog", "setTerrorist: " + str(error))
 
     def setInnocent(self):
         for Player in Server.ActivePlayers:
@@ -304,18 +308,18 @@ class TroubleinTerroristTown:
     def On_PlayerHurt(self, PlayerHurtEvent):
         try:
             if DataStore.Get("TTT", "PrepPeriod"):
-                for x in range(0, len(CombatEntityHurtEvent.DamageAmounts)):
-                    CombatEntityHurtEvent.DamageAmounts[x] = 0
+                for x in range(0, len(PlayerHurtEvent.DamageAmounts)):
+                    PlayerHurtEvent.DamageAmounts[x] = 0
             else:
                 if PlayerHurtEvent.Weapon.Name == "Bone Knife":
                     if PlayerHurtEvent.Attacker.IsPlayer():
                         Attacker = PlayerHurtEvent.Attacker.ToPlayer()
                         if self.findgroup(Attacker) == "Terrorist":
-                            for x in range(0, len(CombatEntityHurtEvent.DamageAmounts)):
-                                CombatEntityHurtEvent.DamageAmounts[x] = 100
+                            for x in range(0, len(PlayerHurtEvent.DamageAmounts)):
+                                PlayerHurtEvent.DamageAmounts[x] = 100
                         
         except Exception, error:
-            Plugin.Log("ErrorLog", error)
+            Plugin.Log("ErrorLog", "On_PlayerHurt: " + str(error))
             return
 
     def On_PlayerDied(self, PlayerDeathEvent):
@@ -325,7 +329,6 @@ class TroubleinTerroristTown:
             PlayerDeathEvent.dropLoot = False
             if not DataStore.Get("TTT", "PrepPeriod"):
                 Victim = PlayerDeathEvent.Victim
-                DataStore.Remove("TTT", "In-Game:" + Victim.SteamID)
                 if PlayerDeathEvent.Attacker.IsPlayer():
                     Attacker = PlayerDeathEvent.Attacker.ToPlayer()
                     if self.findgroup(Victim) == "Terrorist":
@@ -335,27 +338,27 @@ class TroubleinTerroristTown:
                             self.endgame("Innocent")
                         else:
                             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), str(self.amountofterrorists) + " Terrorist(s) remain!")
-                            return
                     elif self.findgroup(Victim) == "Innocent":
                         if self.findgroup(Attacker) == "Terrorist":
                             self.amountofinnocents -= 1
-                            if PlayerDeathEvent.Weapon.Name == "Bone Knife":
-                                Attacker.MessageFrom(DataStore.Get("TTT", "SystemName"), "That kill was silent!")
-                            else:
+                            if not PlayerDeathEvent.Weapon.Name == "Bone Knife":
                                 Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "A Terrorist has killed a player [" + Victim.Name + "]")
                                 if self.amountofinnocents == 0:
                                     self.endgame("Terrorist")
+                            else:
+                                Attacker.MessageFrom(DataStore.Get("TTT", "SystemName"), "That kill was silent!")
+                                if self.amountofinnocents == 0:
+                                    self.endgame("Terrorist")
                         elif self.KillData[Attacker.SteamID] >= DataStore.Get("TTT", "KillAmount"):
-                            Attacker.basePlayer.Die()
+                            Attacker.Kill()
                             Attacker.basePlayer.Respawn()
                             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name + " has killed " + str(DataStore.Get("TTT", "KillAmount")) + " Innocent player(s) and has been killed for his actions!")
-                            return
                         else:
                             self.KillData[Attacker.SteamID] += 1
                             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name + " has killed an Innocent! " + Victim.Name + "]")
-                            return
                     else:
-                        Plugin.Log("ErrorLog", Victim.Name + " was not either a Terrorist or an Innocent!")
+                        if DataStore.Contains("TTT", "In-Game:" + Victim.SteamID):
+                            Plugin.Log("ErrorLog", "On_PlayerDied: " + Victim.Name + " was not either a Terrorist or an Innocent!")                            
                 else:
                     if self.findgroup(PlayerDeathEvent.Victim) == "Terrorist":
                         Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "A Terrorist [" + PlayerDeathEvent.Victim.Name + "] has been killed by natural forces")
@@ -367,7 +370,6 @@ class TroubleinTerroristTown:
                         self.amountofinnocents -= 1
                         if self.amountofinnocents == 0:
                             self.endgame("Terrorist")
-            else:
-                return
+                DataStore.Remove("TTT", "In-Game:" + Victim.SteamID)
         except Exception, error:
-            Plugin.Log("ErrorLog", error)
+            Plugin.Log("ErrorLog", "On_PlayerDied: " + str(error))
