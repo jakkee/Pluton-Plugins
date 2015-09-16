@@ -9,35 +9,36 @@ import Pluton
 import sys
 path = Util.GetPublicFolder()
 sys.path.append(path + "\\Addons\\Lib\\")
-#Normally use Python Folder, But Addons folder sounds more appropriate
-Lib = True
+# Todo: Rename to Python, since the documentation uses that folder everywhere?
+# Normally use Python Folder, But Addons folder sounds more appropriate
 try:
     import random
     import time
 except ImportError:
     Util.Log("Trouble in Terrorist Town: Import Error, Download extra Python Libs from: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/")
-    Util.Log("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Addons\Lib]")
-    Lib = False
+    raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Addons\Lib]")
 
- 
+KillData = {}
+terroristdata = {}
+PlayerLocData = {}
+
+
 class TroubleinTerroristTown:
 
-    KillData = {}
-    terroristdata = {}
-    terroristdata[0] = 1
     amountofterrorists = 0
     amountofinnocents = 0
     countdown = 0
-    PlayerLocData = {}
 
     def On_PluginInit(self):
+        terroristdata[0] = 1
         if not Plugin.IniExists("Settings"):
             Plugin.CreateIni("Settings")
             ini = Plugin.GetIni("Settings")
             ini.AddSetting("Settings", "SystemName", "Trouble in Terrorist Town")
             ini.AddSetting("Settings", ";SystemName", "Plugins chat name")
             ini.AddSetting("Settings", "Preparation Period", "30")
-            ini.AddSetting("Settings", ";Preparation Period", "After x seconds check player count (Starts game if it meets min players)")
+            ini.AddSetting("Settings", ";Preparation Period",
+                           "After x seconds check player count (Starts game if it meets min players)")
             ini.AddSetting("Settings", "CountDown", "20")
             ini.AddSetting("Settings", ";CountDown", "For how many seconds should we do a countdown for?")
             ini.AddSetting("Settings", "FreezePlayerLocTimer", "600")
@@ -66,8 +67,9 @@ class TroubleinTerroristTown:
             ini.AddSetting("Messages", "LastLeaveMessage", "The last %Group% alive left the server!")
             ini.AddSetting("Messages", "LeaveMessage", "A(n) %Group% left the server!")
             ini.AddSetting("Messages", "Ran out of time", "The match has ended. [Time limit reached]")
-            #ini.AddSetting("Messages", "", "")
+            # ini.AddSetting("Messages", "", "")
             ini.Save()
+        # Todo: Storing values in the class should be faster than DS
         ini = Plugin.GetIni("Settings")
         DataStore.Flush("TTT")
         DataStore.Add("TTT", "SystemName", ini.GetSetting("Settings", "SystemName"))
@@ -75,13 +77,13 @@ class TroubleinTerroristTown:
         DataStore.Add("TTT", "FreezerTimer", self.Tryint(ini.GetSetting("Settings", "FreezePlayerLocTimer")))
         DataStore.Add("TTT", "MinPlayers", self.Tryint(ini.GetSetting("Settings", "Min Players")))
         DataStore.Add("TTT", "DestroyableBuilding", ini.GetBoolSetting("Settings", "Destroyable Buildings"))
-        #DataStore.Add("TTT", "DestroyableDeloy", ini.GetBoolSetting("Settings", "Destroyable Deloyables"))
+        # DataStore.Add("TTT", "DestroyableDeloy", ini.GetBoolSetting("Settings", "Destroyable Deloyables"))
         DataStore.Add("TTT", "CoolDown", self.Tryint(ini.GetSetting("Settings", "CountDown")))
         DataStore.Add("TTT", "KillAmount", self.Tryint(ini.GetSetting("Settings", "KillMistakeAmount")))
         DataStore.Add("TTT", "MatchLength", self.Tryint(ini.GetSetting("Settings", "Match length")) * 1000)
         DataStore.Add("TTT", "ResetMatch", self.Tryint(ini.GetSetting("Settings", "ResetTime")) * 1000)
         DataStore.Add("TTT", "LeaveMessage", ini.GetBoolSetting("Settings", "Leave Messages"))
-        #DataStore.Add("TTT", "", ini.GetSetting("Settings", ""))
+        # DataStore.Add("TTT", "", ini.GetSetting("Settings", ""))
         DataStore.Add("TTT", "MSGPrepPeriod", ini.GetSetting("Messages", "PrepPeriod"))
         DataStore.Add("TTT", "MSGNotEnoughPlayers", ini.GetSetting("Messages", "Not Enough Players"))
         DataStore.Add("TTT", "MSGCountDown", ini.GetSetting("Messages", "CountDown"))
@@ -92,7 +94,7 @@ class TroubleinTerroristTown:
         DataStore.Add("TTT", "MSGLastLeave", ini.GetSetting("Messages", "LastLeaveMessage"))
         DataStore.Add("TTT", "MSGLeave", ini.GetSetting("Messages", "LeaveMessage"))
         DataStore.Add("TTT", "MSGOutOfTime", ini.GetSetting("Messages", "Ran out of time"))
-        #DataStore.Add("TTT", "MSG", ini.GetSetting("Messages", ""))
+        # DataStore.Add("TTT", "MSG", ini.GetSetting("Messages", ""))
         self.countdown = DataStore.Get("TTT", "CoolDown")
         if Lib:
             self.startgame()
@@ -123,18 +125,19 @@ class TroubleinTerroristTown:
             DataStore.Remove("TTT", "USER:" + Player.SteamID)
             Player.basePlayer.Die()
             Player.basePlayer.Respawn()
-        self.KillData = {}
-        self.terroristdata = {}
+        KillData.clear()
+        terroristdata.clear()
+        PlayerLocData.clear()
         self.countdown = DataStore.Get("TTT", "CoolDown")
         self.amountofterrorists = 0
         self.amountofinnocents = 0
-        self.PlayerLocData = {}
         self.startgame()
 
     def startgame(self):
         DataStore.Add("TTT", "PrepPeriod", True)
-        #Display GUI with Prep time instead of broadcast
-        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGPrepPeriod").Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
+        # Display GUI with Prep time instead of broadcast
+        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGPrepPeriod")
+                             .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
         Plugin.CreateTimer("PrepPeriod", int(DataStore.Get("TTT", "PrepPeriodTime"))).Start()
 
     def PrepPeriodCallback(self, timer):
@@ -145,7 +148,8 @@ class TroubleinTerroristTown:
                 continue
         if len(Server.ActivePlayers) >= DataStore.Get("TTT", "MinPlayers"):
             if len(Server.ActivePlayers) == 0:
-                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers").Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
+                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
+                                     .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
             else:
                 timer.Kill()
                 for Player in Server.SleepingPlayers:
@@ -159,7 +163,7 @@ class TroubleinTerroristTown:
                     Player.basePlayer.metabolism.calories.value = 1000
                     Player.basePlayer.metabolism.hydration.value = 1000
                     Player.Health = 100
-                    self.PlayerLocData[Player.SteamID] = Player.Location
+                    PlayerLocData[Player.SteamID] = Player.Location
                     DataStore.Add("TTT", "In-Game:" + Player.SteamID, True)
                     for item in Player.Inventory.AllItems():
                         item._item.RemoveFromContainer()
@@ -191,17 +195,18 @@ class TroubleinTerroristTown:
                         Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Machete"), 1)
                         Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("Pistol Bullet"), 500)
                         Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
-                        #Player.Inventory.Add()
+                        # Player.Inventory.Add()
                 Plugin.CreateTimer("CountDown", 1000).Start()
                 Plugin.CreateTimer("FreezePlayers", 600).Start()
         else:
-            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers").Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
+            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
+                                 .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
 
     def FreezePlayersCallback(self, timer):
         for Player in Server.ActivePlayers:
-            #if Util.GetVectorsDistance(Player.Location, self.PlayerLocData[Player.SteamID]) < 1.5:
-            Player.basePlayer.MovePosition(self.PlayerLocData[Player.SteamID])
-            Player.basePlayer.ClientRPCPlayer(None, Player.basePlayer, "ForcePositionTo", self.PlayerLocData[Player.SteamID])
+            # if Util.GetVectorsDistance(Player.Location, self.PlayerLocData[Player.SteamID]) < 1.5:
+            Player.basePlayer.MovePosition(PlayerLocData[Player.SteamID])
+            Player.basePlayer.ClientRPCPlayer(None, Player.basePlayer, "ForcePositionTo", PlayerLocData[Player.SteamID])
             Player.basePlayer.TransformChanged()
 
     def On_PlayerWakeUp(self, Player):
@@ -211,8 +216,9 @@ class TroubleinTerroristTown:
 
     def CountDownCallback(self, timer):
         if self.countdown > 0:
-            #Gui here to stop the fucking chat spam
-            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)))
+            # Gui here to stop the fucking chat spam
+            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown")
+                                 .Replace("%Time%", str(self.countdown)))
             self.countdown -= 1
         else:
             timer.Kill()
@@ -223,7 +229,8 @@ class TroubleinTerroristTown:
                     continue
             for Player in Server.ActivePlayers:
                 Player.basePlayer.StopSpectating()
-                Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder").Replace("%Group%", self.findgroup(Player)))
+                Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder")
+                                   .Replace("%Group%", self.findgroup(Player)))
             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGGameStarted"))
             Plugin.GetTimer("FreezePlayers").Kill()
             DataStore.Add("TTT", "PrepPeriod", False)
@@ -240,21 +247,26 @@ class TroubleinTerroristTown:
                 self.amountofterrorists -= 1
                 if self.amountofterrorists == 0:
                     if DataStore.Get("TTT", "LeaveMessage"):
-                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLastLeave").Replace("%Group%", self.findgroup(Player)))
+                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLastLeave")
+                                             .Replace("%Group%", self.findgroup(Player)))
                     self.endgame("Innocent")
                 else:
                     if DataStore.Get("TTT", "LeaveMessage"):
-                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLeave").Replace("%Group%", self.findgroup(Player)))
+                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLeave")
+                                             .Replace("%Group%", self.findgroup(Player)))
             else:
                 if self.findgroup(Player) == "Innocent":
                     self.amountofinnocents -= 1
                     if self.amountofinnocents == 0:
                         if DataStore.Get("TTT", "LeaveMessage"):
-                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLastLeave").Replace("%Group%", self.findgroup(Player)))
+                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"),
+                                                 DataStore.Get("TTT", "MSGLastLeave")
+                                                 .Replace("%Group%", self.findgroup(Player)))
                         self.endgame("Terrorist")
                     else:
                         if DataStore.Get("TTT", "LeaveMessage"):
-                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLeave").Replace("%Group%", self.findgroup(Player)))
+                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLeave")
+                                                 .Replace("%Group%", self.findgroup(Player)))
         DataStore.Remove("TTT", "USER:" + Player.SteamID)
         DataStore.Remove("TTT", "In-Game:" + Player.SteamID)
 
@@ -323,8 +335,8 @@ class TroubleinTerroristTown:
             return
 
     def On_PlayerDied(self, PlayerDeathEvent):
-        #Display kill feed in top right hand corner, Thats more GarrysMod style
-        #E.G: Attacker Name *Gun symbol* Victim Name
+        # Display kill feed in top right hand corner, Thats more GarrysMod style
+        # E.G: Attacker Name *Gun symbol* Victim Name
         try:
             PlayerDeathEvent.dropLoot = False
             if not DataStore.Get("TTT", "PrepPeriod"):
@@ -332,41 +344,50 @@ class TroubleinTerroristTown:
                 if PlayerDeathEvent.Attacker.IsPlayer():
                     Attacker = PlayerDeathEvent.Attacker.ToPlayer()
                     if self.findgroup(Victim) == "Terrorist":
-                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name + " has killed a Terrorist [" + Victim.Name + "]")
+                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name
+                                             + " has killed a Terrorist [" + Victim.Name + "]")
                         self.amountofterrorists -= 1
                         if self.amountofterrorists == 0:
                             self.endgame("Innocent")
                         else:
-                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), str(self.amountofterrorists) + " Terrorist(s) remain!")
+                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), str(self.amountofterrorists)
+                                                 + " Terrorist(s) remain!")
                     elif self.findgroup(Victim) == "Innocent":
                         if self.findgroup(Attacker) == "Terrorist":
                             self.amountofinnocents -= 1
                             if not PlayerDeathEvent.Weapon.Name == "Bone Knife":
-                                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "A Terrorist has killed a player [" + Victim.Name + "]")
+                                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"),
+                                                     "A Terrorist has killed a player [" + Victim.Name + "]")
                                 if self.amountofinnocents == 0:
                                     self.endgame("Terrorist")
                             else:
                                 Attacker.MessageFrom(DataStore.Get("TTT", "SystemName"), "That kill was silent!")
                                 if self.amountofinnocents == 0:
                                     self.endgame("Terrorist")
-                        elif self.KillData[Attacker.SteamID] >= DataStore.Get("TTT", "KillAmount"):
+                        elif KillData[Attacker.SteamID] >= DataStore.Get("TTT", "KillAmount"):
                             Attacker.Kill()
                             Attacker.basePlayer.Respawn()
-                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name + " has killed " + str(DataStore.Get("TTT", "KillAmount")) + " Innocent player(s) and has been killed for his actions!")
+                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name
+                                                 + " has killed " + str(DataStore.Get("TTT", "KillAmount"))
+                                                 + " Innocent player(s) and has been killed for his actions!")
                         else:
-                            self.KillData[Attacker.SteamID] += 1
-                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name + " has killed an Innocent! " + Victim.Name + "]")
+                            KillData[Attacker.SteamID] += 1
+                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name
+                                                 + " has killed an Innocent! " + Victim.Name + "]")
                     else:
                         if DataStore.Contains("TTT", "In-Game:" + Victim.SteamID):
-                            Plugin.Log("ErrorLog", "On_PlayerDied: " + Victim.Name + " was not either a Terrorist or an Innocent!")                            
+                            Plugin.Log("ErrorLog", "On_PlayerDied: " + Victim.Name
+                                       + " was not either a Terrorist or an Innocent!")
                 else:
                     if self.findgroup(PlayerDeathEvent.Victim) == "Terrorist":
-                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "A Terrorist [" + PlayerDeathEvent.Victim.Name + "] has been killed by natural forces")
+                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "A Terrorist ["
+                                             + PlayerDeathEvent.Victim.Name + "] has been killed by natural forces")
                         self.amountofterrorists -= 1
                         if self.amountofterrorists == 0:
                             self.endgame("Innocent")
                     else:
-                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "An Innocent [" + PlayerDeathEvent.Victim.Name + "] has been killed by natural forces")
+                        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "An Innocent ["
+                                             + PlayerDeathEvent.Victim.Name + "] has been killed by natural forces")
                         self.amountofinnocents -= 1
                         if self.amountofinnocents == 0:
                             self.endgame("Terrorist")
