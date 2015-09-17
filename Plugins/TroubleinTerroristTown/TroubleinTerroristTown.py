@@ -9,13 +9,23 @@ import Pluton
 import sys
 import re
 path = Util.GetPublicFolder()
+<<<<<<< HEAD
 sys.path.append(path + "\\Python\\Lib\\")
+=======
+sys.path.append(path + "\\Addons\\Lib\\")
+# Todo: Rename to Python, since the documentation uses that folder everywhere?
+# Normally use Python Folder, But Addons folder sounds more appropriate
+>>>>>>> 1f0894e7f3b64c80bbaa3026b8690247bdff5013
 try:
     import random
     # import time
 except ImportError:
     Util.Log("Trouble in Terrorist Town: Import Error, Download extra Python Libs from: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/")
+<<<<<<< HEAD
     raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Python\Lib]")
+=======
+    raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Addons\Lib]")
+>>>>>>> 1f0894e7f3b64c80bbaa3026b8690247bdff5013
 
 rgbstringtemplate = re.compile(r'#[a-fA-F0-9]{6}$')
 KillData = {}
