@@ -1,7 +1,7 @@
 __title__ = 'TroubleinTerroristTown'
-__author__ = 'Jakkee'
+__author__ = 'Jakkee & DreTaX'
 __about__ = 'GameMode: Trouble in Terrorist Town'
-__version__ = '1.0.1Beta'
+__version__ = 'Beta'
 
 import clr
 clr.AddReferenceByPartialName("Pluton")
@@ -9,15 +9,13 @@ import Pluton
 import sys
 import re
 path = Util.GetPublicFolder()
-sys.path.append(path + "\\Addons\\Lib\\")
-# Todo: Rename to Python, since the documentation uses that folder everywhere?
-# Normally use Python Folder, But Addons folder sounds more appropriate
+sys.path.append(path + "\\Python\\Lib\\")
 try:
     import random
-    import time
+    # import time
 except ImportError:
     Util.Log("Trouble in Terrorist Town: Import Error, Download extra Python Libs from: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/")
-    raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Addons\Lib]")
+    raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Python\Lib]")
 
 rgbstringtemplate = re.compile(r'#[a-fA-F0-9]{6}$')
 KillData = {}
@@ -222,7 +220,7 @@ class TroubleinTerroristTown:
                         Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
                         # Player.Inventory.Add()
                 Plugin.CreateTimer("CountDown", 1000).Start()
-                Plugin.CreateTimer("FreezePlayers", 600).Start()
+                Plugin.CreateTimer("FreezePlayers", int(DataStore.Get("TTT", "FreezerTimer"))).Start()
         else:
             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
                                  .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
