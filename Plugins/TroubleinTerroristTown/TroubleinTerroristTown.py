@@ -1,26 +1,30 @@
 __title__ = 'TroubleinTerroristTown'
-__author__ = 'Jakkee & DreTaX'
+__author__ = 'Jakkee'
 __about__ = 'GameMode: Trouble in Terrorist Town'
-__version__ = 'Beta'
+__version__ = '1.0.1Beta'
 
 import clr
 clr.AddReferenceByPartialName("Pluton")
 import Pluton
 import sys
+import re
 path = Util.GetPublicFolder()
-sys.path.append(path + "\\Python\\Lib\\")
+sys.path.append(path + "\\Addons\\Lib\\")
+# Todo: Rename to Python, since the documentation uses that folder everywhere?
+# Normally use Python Folder, But Addons folder sounds more appropriate
 try:
     import random
-    # import time
+    import time
 except ImportError:
     Util.Log("Trouble in Terrorist Town: Import Error, Download extra Python Libs from: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/")
-    raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Python\Lib]")
+    raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Addons\Lib]")
 
+rgbstringtemplate = re.compile(r'#[a-fA-F0-9]{6}$')
 KillData = {}
 terroristdata = {}
-PlayerLocData = {}e
+PlayerLocData = {}
 
- 
+
 class TroubleinTerroristTown:
 
     amountofterrorists = 0
@@ -28,6 +32,7 @@ class TroubleinTerroristTown:
     countdown = 0
 
     def On_PluginInit(self):
+        terroristdata[0] = 1
         if not Plugin.IniExists("Settings"):
             Plugin.CreateIni("Settings")
             ini = Plugin.GetIni("Settings")
@@ -52,8 +57,8 @@ class TroubleinTerroristTown:
             ini.AddSetting("Settings", ";Leave Message", "Display leave messages if an Innocent/Terrorist left?")
             ini.AddSetting("Settings", "Destroyable Buildings", "False")
             ini.AddSetting("Settings", ";Destroyable Buildings", "Did you create a small island with some objects you don't want destroyed? (Server wide)")
-            # ini.AddSetting("Settings", ";Destroyable Deloyables", "False")
-            # ini.AddSetting("Settings", "", "")
+            #ini.AddSetting("Settings", ";Destroyable Deloyables", "False")
+            #ini.AddSetting("Settings", "", "")
             ini.AddSetting("Messages", "PrepPeriod", "Game will start countdown in %Time% seconds")
             ini.AddSetting("Messages", "Not Enough Players", "Not enough players to start! Retrying in: %Time% seconds")
             ini.AddSetting("Messages", "CountDown", "Game starting in: %Time% seconds")
@@ -66,7 +71,7 @@ class TroubleinTerroristTown:
             ini.AddSetting("Messages", "Ran out of time", "The match has ended. [Time limit reached]")
             # ini.AddSetting("Messages", "", "")
             ini.Save()
-            # Todo: Storing values in the class should be faster than DS
+        # Todo: Storing values in the class should be faster than DS
         ini = Plugin.GetIni("Settings")
         DataStore.Flush("TTT")
         DataStore.Add("TTT", "SystemName", ini.GetSetting("Settings", "SystemName"))
@@ -74,30 +79,53 @@ class TroubleinTerroristTown:
         DataStore.Add("TTT", "FreezerTimer", self.Tryint(ini.GetSetting("Settings", "FreezePlayerLocTimer")))
         DataStore.Add("TTT", "MinPlayers", self.Tryint(ini.GetSetting("Settings", "Min Players")))
         DataStore.Add("TTT", "DestroyableBuilding", ini.GetBoolSetting("Settings", "Destroyable Buildings"))
-        #DataStore.Add("TTT", "DestroyableDeloy", ini.GetBoolSetting("Settings", "Destroyable Deloyables"))
+        # DataStore.Add("TTT", "DestroyableDeloy", ini.GetBoolSetting("Settings", "Destroyable Deloyables"))
         DataStore.Add("TTT", "CoolDown", self.Tryint(ini.GetSetting("Settings", "CountDown")))
         DataStore.Add("TTT", "KillAmount", self.Tryint(ini.GetSetting("Settings", "KillMistakeAmount")))
         DataStore.Add("TTT", "MatchLength", self.Tryint(ini.GetSetting("Settings", "Match length")) * 1000)
         DataStore.Add("TTT", "ResetMatch", self.Tryint(ini.GetSetting("Settings", "ResetTime")) * 1000)
         DataStore.Add("TTT", "LeaveMessage", ini.GetBoolSetting("Settings", "Leave Messages"))
-        #DataStore.Add("TTT", "", ini.GetSetting("Settings", ""))
-        DataStore.Add("TTT", "MSGPrepPeriod", ini.GetSetting("Messages", "PrepPeriod"))
-        DataStore.Add("TTT", "MSGNotEnoughPlayers", ini.GetSetting("Messages", "Not Enough Players"))
-        DataStore.Add("TTT", "MSGCountDown", ini.GetSetting("Messages", "CountDown"))
-        DataStore.Add("TTT", "MSGGameStarted", ini.GetSetting("Messages", "GameStarted"))
-        DataStore.Add("TTT", "MSGWinner", ini.GetSetting("Messages", "Winner"))
-        DataStore.Add("TTT", "MSGReset", ini.GetSetting("Messages", "Reset"))
-        DataStore.Add("TTT", "MSGReminder", ini.GetSetting("Messages", "GroupReminder"))
-        DataStore.Add("TTT", "MSGLastLeave", ini.GetSetting("Messages", "LastLeaveMessage"))
-        DataStore.Add("TTT", "MSGLeave", ini.GetSetting("Messages", "LeaveMessage"))
-        DataStore.Add("TTT", "MSGOutOfTime", ini.GetSetting("Messages", "Ran out of time"))
+        # DataStore.Add("TTT", "", ini.GetSetting("Settings", ""))
+        DataStore.Add("TTT", "MSGPrepPeriod", self.ColorizeMessage(ini.GetSetting("Messages", "PrepPeriod")))
+        DataStore.Add("TTT", "MSGNotEnoughPlayers",
+                      self.ColorizeMessage(ini.GetSetting("Messages", "Not Enough Players")))
+        DataStore.Add("TTT", "MSGCountDown", self.ColorizeMessage(ini.GetSetting("Messages", "CountDown")))
+        DataStore.Add("TTT", "MSGGameStarted", self.ColorizeMessage(ini.GetSetting("Messages", "GameStarted")))
+        DataStore.Add("TTT", "MSGWinner", self.ColorizeMessage(ini.GetSetting("Messages", "Winner")))
+        DataStore.Add("TTT", "MSGReset", self.ColorizeMessage(ini.GetSetting("Messages", "Reset")))
+        DataStore.Add("TTT", "MSGReminder", self.ColorizeMessage(ini.GetSetting("Messages", "GroupReminder")))
+        DataStore.Add("TTT", "MSGLastLeave", self.ColorizeMessage(ini.GetSetting("Messages", "LastLeaveMessage")))
+        DataStore.Add("TTT", "MSGLeave", self.ColorizeMessage(ini.GetSetting("Messages", "LeaveMessage")))
+        DataStore.Add("TTT", "MSGOutOfTime", self.ColorizeMessage(ini.GetSetting("Messages", "Ran out of time")))
         # DataStore.Add("TTT", "MSG", ini.GetSetting("Messages", ""))
         self.countdown = DataStore.Get("TTT", "CoolDown")
-        if Lib:
-            self.startgame()
-        else:
-            Util.Log("Trouble in Terrorist Town: Import Error, Download extra Python Libs from: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/")
-            Util.Log("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Python\Lib]")
+        self.startgame()
+
+    def ColorizeMessage(self, String):
+        s = String
+        if "COLOR" in s:
+            arr = []
+            list = s.split('COLOR')
+            for part in list:
+                if part.isspace() or not part:
+                    continue
+                words = part.split(' ')
+                for word in words:
+                    strip = word.strip(' ')
+                    if self.IsRGB(strip):
+                        color = part.split(' ', 1)[0]
+                        themsg = part.split(' ', 1)[1]
+                        colorized = self.ColorText(color, themsg)
+                        arr.append(colorized)
+                        break
+            s = ' '.join(arr)
+        return s
+
+    def ColorText(self, color, part):
+        return '<color=' + color + '>' + part + '</color>'
+
+    def IsRGB(self, value):
+        return bool(rgbstringtemplate.match(value))
 
     def Tryint(self, Arg):
         try:
@@ -145,7 +173,8 @@ class TroubleinTerroristTown:
                 continue
         if len(Server.ActivePlayers) >= DataStore.Get("TTT", "MinPlayers"):
             if len(Server.ActivePlayers) == 0:
-                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers").Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
+                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
+                                     .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
             else:
                 timer.Kill()
                 for Player in Server.SleepingPlayers:
@@ -193,20 +222,17 @@ class TroubleinTerroristTown:
                         Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
                         # Player.Inventory.Add()
                 Plugin.CreateTimer("CountDown", 1000).Start()
-                Plugin.CreateTimer("FreezePlayers", int(DataStore.Get("TTT", "FreezerTimer"))).Start()
+                Plugin.CreateTimer("FreezePlayers", 600).Start()
         else:
             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
                                  .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
 
     def FreezePlayersCallback(self, timer):
         for Player in Server.ActivePlayers:
-            if Util.GetVectorsDistance(Player.Location, self.PlayerLocData[Player.SteamID]) > 1:
-                Player.basePlayer.MovePosition(self.PlayerLocData[Player.SteamID])
-                Player.basePlayer.ClientRPCPlayer(None, Player.basePlayer, "ForcePositionTo", self.PlayerLocData[Player.SteamID])
-                Player.basePlayer.TransformChanged()
-                Player.basePlayer.UpdateNetworkGroup()
-                Player.basePlayer.UpdatePlayerCollider(True, False)
-                Player.MessageFrom(DataStore.Get("TTT", "SystemName"), "Game is still counting down, Please wait!")
+            # if Util.GetVectorsDistance(Player.Location, self.PlayerLocData[Player.SteamID]) < 1.5:
+            Player.basePlayer.MovePosition(PlayerLocData[Player.SteamID])
+            Player.basePlayer.ClientRPCPlayer(None, Player.basePlayer, "ForcePositionTo", PlayerLocData[Player.SteamID])
+            Player.basePlayer.TransformChanged()
 
     def On_PlayerWakeUp(self, Player):
         if DataStore.Get("TTT", "On_PlayerWakeUp"):
@@ -215,7 +241,7 @@ class TroubleinTerroristTown:
 
     def CountDownCallback(self, timer):
         if self.countdown > 0:
-            # Countdown Gui Here
+            # Gui here to stop the fucking chat spam
             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown")
                                  .Replace("%Time%", str(self.countdown)))
             self.countdown -= 1
@@ -227,9 +253,9 @@ class TroubleinTerroristTown:
                 else:
                     continue
             for Player in Server.ActivePlayers:
-                group = self.findgroup(Player)
-                if group == "Terrorist" or "Innocent":
-                    Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder").Replace("%Group%", group))
+                Player.basePlayer.StopSpectating()
+                Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder")
+                                   .Replace("%Group%", self.findgroup(Player)))
             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGGameStarted"))
             Plugin.GetTimer("FreezePlayers").Kill()
             DataStore.Add("TTT", "PrepPeriod", False)
@@ -258,7 +284,8 @@ class TroubleinTerroristTown:
                     self.amountofinnocents -= 1
                     if self.amountofinnocents == 0:
                         if DataStore.Get("TTT", "LeaveMessage"):
-                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGLastLeave")
+                            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"),
+                                                 DataStore.Get("TTT", "MSGLastLeave")
                                                  .Replace("%Group%", self.findgroup(Player)))
                         self.endgame("Terrorist")
                     else:
@@ -271,12 +298,14 @@ class TroubleinTerroristTown:
     def setTerrorist(self):
         try:
             totalplayers = Server.ActivePlayers
+            self.amountofterrorists = round(len(totalplayers) / 3, 0)
             need = round(len(totalplayers) / 3, 0)
             need = str(need).split(".")[0]
+            Util.Log(need)
             need = int(need)
             if need == 0:
+                self.amountofterrorists = 1
                 need = 1
-            self.amountofterrorists = need
             maax = len(totalplayers) + 1
             randlist = random.sample(xrange(0, maax), need)
             count = 0
@@ -352,7 +381,8 @@ class TroubleinTerroristTown:
                         if self.findgroup(Attacker) == "Terrorist":
                             self.amountofinnocents -= 1
                             if not PlayerDeathEvent.Weapon.Name == "Bone Knife":
-                                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "A Terrorist has killed a player [" + Victim.Name + "]")
+                                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"),
+                                                     "A Terrorist has killed a player [" + Victim.Name + "]")
                                 if self.amountofinnocents == 0:
                                     self.endgame("Terrorist")
                             else:
@@ -363,15 +393,16 @@ class TroubleinTerroristTown:
                             Attacker.Kill()
                             Attacker.basePlayer.Respawn()
                             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name
-                                                 + " has killed " + str(DataStore.Get("TTT", "KillAmount")) + " Innocent player(s) and has been killed for his actions!")
+                                                 + " has killed " + str(DataStore.Get("TTT", "KillAmount"))
+                                                 + " Innocent player(s) and has been killed for his actions!")
                         else:
-                            sKillData[Attacker.SteamID] += 1
+                            KillData[Attacker.SteamID] += 1
                             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), Attacker.Name
                                                  + " has killed an Innocent! " + Victim.Name + "]")
                     else:
                         if DataStore.Contains("TTT", "In-Game:" + Victim.SteamID):
                             Plugin.Log("ErrorLog", "On_PlayerDied: " + Victim.Name
-                                       + " was not either a Terrorist or an Innocent!")                            
+                                       + " was not either a Terrorist or an Innocent!")
                 else:
                     if self.findgroup(PlayerDeathEvent.Victim) == "Terrorist":
                         Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), "A Terrorist ["
