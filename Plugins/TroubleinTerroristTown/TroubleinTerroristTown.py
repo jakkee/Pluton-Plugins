@@ -7,6 +7,7 @@ import clr
 clr.AddReferenceByPartialName("Pluton")
 import Pluton
 import sys
+import re
 path = Util.GetPublicFolder()
 sys.path.append(path + "\\Addons\\Lib\\")
 # Todo: Rename to Python, since the documentation uses that folder everywhere?
@@ -18,6 +19,7 @@ except ImportError:
     Util.Log("Trouble in Terrorist Town: Import Error, Download extra Python Libs from: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/")
     raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Addons\Lib]")
 
+rgbstringtemplate = re.compile(r'#[a-fA-F0-9]{6}$')
 KillData = {}
 terroristdata = {}
 PlayerLocData = {}
@@ -84,23 +86,46 @@ class TroubleinTerroristTown:
         DataStore.Add("TTT", "ResetMatch", self.Tryint(ini.GetSetting("Settings", "ResetTime")) * 1000)
         DataStore.Add("TTT", "LeaveMessage", ini.GetBoolSetting("Settings", "Leave Messages"))
         # DataStore.Add("TTT", "", ini.GetSetting("Settings", ""))
-        DataStore.Add("TTT", "MSGPrepPeriod", ini.GetSetting("Messages", "PrepPeriod"))
-        DataStore.Add("TTT", "MSGNotEnoughPlayers", ini.GetSetting("Messages", "Not Enough Players"))
-        DataStore.Add("TTT", "MSGCountDown", ini.GetSetting("Messages", "CountDown"))
-        DataStore.Add("TTT", "MSGGameStarted", ini.GetSetting("Messages", "GameStarted"))
-        DataStore.Add("TTT", "MSGWinner", ini.GetSetting("Messages", "Winner"))
-        DataStore.Add("TTT", "MSGReset", ini.GetSetting("Messages", "Reset"))
-        DataStore.Add("TTT", "MSGReminder", ini.GetSetting("Messages", "GroupReminder"))
-        DataStore.Add("TTT", "MSGLastLeave", ini.GetSetting("Messages", "LastLeaveMessage"))
-        DataStore.Add("TTT", "MSGLeave", ini.GetSetting("Messages", "LeaveMessage"))
-        DataStore.Add("TTT", "MSGOutOfTime", ini.GetSetting("Messages", "Ran out of time"))
+        DataStore.Add("TTT", "MSGPrepPeriod", self.ColorizeMessage(ini.GetSetting("Messages", "PrepPeriod")))
+        DataStore.Add("TTT", "MSGNotEnoughPlayers",
+                      self.ColorizeMessage(ini.GetSetting("Messages", "Not Enough Players")))
+        DataStore.Add("TTT", "MSGCountDown", self.ColorizeMessage(ini.GetSetting("Messages", "CountDown")))
+        DataStore.Add("TTT", "MSGGameStarted", self.ColorizeMessage(ini.GetSetting("Messages", "GameStarted")))
+        DataStore.Add("TTT", "MSGWinner", self.ColorizeMessage(ini.GetSetting("Messages", "Winner")))
+        DataStore.Add("TTT", "MSGReset", self.ColorizeMessage(ini.GetSetting("Messages", "Reset")))
+        DataStore.Add("TTT", "MSGReminder", self.ColorizeMessage(ini.GetSetting("Messages", "GroupReminder")))
+        DataStore.Add("TTT", "MSGLastLeave", self.ColorizeMessage(ini.GetSetting("Messages", "LastLeaveMessage")))
+        DataStore.Add("TTT", "MSGLeave", self.ColorizeMessage(ini.GetSetting("Messages", "LeaveMessage")))
+        DataStore.Add("TTT", "MSGOutOfTime", self.ColorizeMessage(ini.GetSetting("Messages", "Ran out of time")))
         # DataStore.Add("TTT", "MSG", ini.GetSetting("Messages", ""))
         self.countdown = DataStore.Get("TTT", "CoolDown")
-        if Lib:
-            self.startgame()
-        else:
-            Util.Log("Trouble in Terrorist Town: Import Error, Download extra Python Libs from: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/")
-            Util.Log("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Addons\Lib]")
+        self.startgame()
+
+    def ColorizeMessage(self, String):
+        s = String
+        if "COLOR" in s:
+            arr = []
+            list = s.split('COLOR')
+            for part in list:
+                if part.isspace() or not part:
+                    continue
+                words = part.split(' ')
+                for word in words:
+                    strip = word.strip(' ')
+                    if self.IsRGB(strip):
+                        color = part.split(' ', 1)[0]
+                        themsg = part.split(' ', 1)[1]
+                        colorized = self.ColorText(color, themsg)
+                        arr.append(colorized)
+                        break
+            s = ' '.join(arr)
+        return s
+
+    def ColorText(self, color, part):
+        return '<color=' + color + '>' + part + '</color>'
+
+    def IsRGB(self, value):
+        return bool(rgbstringtemplate.match(value))
 
     def Tryint(self, Arg):
         try:
