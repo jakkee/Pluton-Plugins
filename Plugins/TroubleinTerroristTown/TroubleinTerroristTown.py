@@ -137,7 +137,8 @@ class TroubleinTerroristTown:
         DataStore.Add("TTT", "PrepPeriod", True)
         DataStore.Add("TTT", "GAMEOVER", True)
         Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGWinner").Replace("%Winner%", winner))
-        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReset").Replace("%Time%", str(DataStore.Get("TTT", "ResetMatch") / 1000)))
+        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReset")
+                             .Replace("%Time%", str(DataStore.Get("TTT", "ResetMatch") / 1000)))
         Plugin.CreateTimer("Reset", int(DataStore.Get("TTT", "ResetMatch"))).Start()
 
     def ResetCallback(self, timer):
@@ -146,7 +147,7 @@ class TroubleinTerroristTown:
         DataStore.Remove("TTT", "On_PlayerWakeUp")
         for Player in Server.ActivePlayers:
             DataStore.Remove("TTT", "USER:" + Player.SteamID)
-            Player.basePlayer.Die()
+            Player.Kill()
             Player.basePlayer.Respawn()
         KillData.clear()
         terroristdata.clear()
@@ -158,17 +159,16 @@ class TroubleinTerroristTown:
 
     def startgame(self):
         DataStore.Add("TTT", "PrepPeriod", True)
+        for Player in Server.ActivePlayers:
+            if Player.basePlayer.IsSpectating():
+                Player.basePlayer.StopSpectating()
+                Player.basePlayer.Respawn()
         # Display GUI with Prep time instead of broadcast
         Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGPrepPeriod")
                              .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
         Plugin.CreateTimer("PrepPeriod", int(DataStore.Get("TTT", "PrepPeriodTime"))).Start()
 
     def PrepPeriodCallback(self, timer):
-        for Player in Server.ActivePlayers:
-            if Player.basePlayer.IsSleeping():
-                Player.basePlayer.EndSleeping()
-            else:
-                continue
         if len(Server.ActivePlayers) >= DataStore.Get("TTT", "MinPlayers"):
             if len(Server.ActivePlayers) == 0:
                 Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
@@ -176,7 +176,7 @@ class TroubleinTerroristTown:
             else:
                 timer.Kill()
                 for Player in Server.SleepingPlayers:
-                    Player.basePlayer.Die()
+                    Player.Kill()
                 self.setTerrorist()
                 self.setInnocent()
                 DataStore.Add("TTT", "On_PlayerWakeUp", True)
@@ -227,10 +227,11 @@ class TroubleinTerroristTown:
 
     def FreezePlayersCallback(self, timer):
         for Player in Server.ActivePlayers:
-            # if Util.GetVectorsDistance(Player.Location, self.PlayerLocData[Player.SteamID]) < 1.5:
-            Player.basePlayer.MovePosition(PlayerLocData[Player.SteamID])
-            Player.basePlayer.ClientRPCPlayer(None, Player.basePlayer, "ForcePositionTo", PlayerLocData[Player.SteamID])
-            Player.basePlayer.TransformChanged()
+            if Util.GetVectorsDistance(Player.Location, self.PlayerLocData[Player.SteamID]) >= 1:
+                Player.basePlayer.MovePosition(PlayerLocData[Player.SteamID])
+                Player.basePlayer.ClientRPCPlayer(None, Player.basePlayer, "ForcePositionTo", PlayerLocData[Player.SteamID])
+                Player.basePlayer.TransformChanged()
+                Player.MessageFrom(DataStore.Get("TTT", "SystemName"), "Wait until the cooldown is finished!")
 
     def On_PlayerWakeUp(self, Player):
         if DataStore.Get("TTT", "On_PlayerWakeUp"):
@@ -239,9 +240,23 @@ class TroubleinTerroristTown:
 
     def CountDownCallback(self, timer):
         if self.countdown > 0:
-            # Gui here to stop the fucking chat spam
-            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown")
-                                 .Replace("%Time%", str(self.countdown)))
+            for Player in Server.ActivePlayers:
+                test = Pluton.PlutonUIEntity(Player.basePlayer.con)
+                testpanel = test.AddPanel("testpanel", "Overlay")
+                button = test.AddPanel("button", "testpanel")
+                button.AddComponent(Pluton.PlutonUI.Button(
+                    anchormin = "0 0",
+                    anchormax = "1 1"))
+                    color = "0.9 0.8 0.3 0.8",
+                    imagetype = "Tiled"))
+                text = test.AddPanel(None, "button")
+                text.AddComponent(Pluton.PlutonUI.Text(
+                    text = DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)),
+                    fontSize = 20,
+                    align = "MiddleCenter"))
+                test.CreateUI()
+            # Gui here
+            # Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)))
             self.countdown -= 1
         else:
             timer.Kill()
@@ -251,7 +266,7 @@ class TroubleinTerroristTown:
                 else:
                     continue
             for Player in Server.ActivePlayers:
-                Player.basePlayer.StopSpectating()
+                test.DestroyUI()
                 Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder")
                                    .Replace("%Group%", self.findgroup(Player)))
             Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGGameStarted"))
