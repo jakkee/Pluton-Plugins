@@ -3,7 +3,6 @@ clr.AddReferenceByPartialName("Pluton")
 import Pluton
 
 
- 
 class UITest:
     def On_PluginInit(self):
         Commands.Register("makeui")\
@@ -24,7 +23,8 @@ class UITest:
         nonamepanel = commui.AddPanel(None, "TestPanel7766");
         nonamepanel.AddComponent(Pluton.PlutonUI.Text(
             text = "Do you want to press a button?",
-            fontSize = 32, align = "MiddleCenter"))
+            fontSize = 32,
+            align = "MiddleCenter"))
         nonamepanel.AddComponent(Pluton.PlutonUI.RectTransform(
             anchormin = "0 0.5",
             anchormax = "1 0.9"))
@@ -37,7 +37,7 @@ class UITest:
         Button88.AddComponent(Pluton.PlutonUI.RectTransform(
             anchormin = "0.3 0.15",
             anchormax = "0.7 0.2"))
-        nn2 = commui.AddPanel(None, "Button88");
+        nn2 = commui.AddPanel(None, "Button88")
         nn2.AddComponent(Pluton.PlutonUI.Text(
             text = "YES",
             fontSize = 20,
