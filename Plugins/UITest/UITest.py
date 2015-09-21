@@ -20,7 +20,7 @@ class UITest:
         testpanel7766.AddComponent(Pluton.PlutonUI.RawImage(
             color = "1.0 1.0 1.0 1.0",
             url = "http://files.facepunch.com/garry/2015/June/03/2015-06-03_12-19-17.jpg"))
-        nonamepanel = commui.AddPanel(None, "TestPanel7766");
+        nonamepanel = commui.AddPanel(None, "TestPanel7766")
         nonamepanel.AddComponent(Pluton.PlutonUI.Text(
             text = "Do you want to press a button?",
             fontSize = 32,
