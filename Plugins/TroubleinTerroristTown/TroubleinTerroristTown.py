@@ -246,261 +246,55 @@ class TroubleinTerroristTown:
 
     def CountDownCallback(self, timer):
         if self.countdown > 0:
+            ui = [
+                {
+                    "name": "TTT",
+                    "parent": "Overlay",
+                    "components":
+                    [
+                        {
+                            "type": "UnityEngine.UI.Image",
+                            "color": "0.1 0.1 0.1 1",
+                        },
+                        {
+                            "type": "RectTransform",
+                            "anchormin": "0.44 0.94",
+                            "anchormax": "0.56 0.98"
+                        }
+                    ]
+                },
+                {
+                    "parent": "TTT",
+                    "components":
+                    [
+                        {
+                            "type": "UnityEngine.UI.Text",
+                            "text": DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)),
+                            "fontSize": 20,
+                            "align": "MiddleCenter",
+                        },
+                        {
+                            "type": "RectTransform",
+                            "anchormin": "0.01 0.01",
+                            "anchormax": "0.91 0.91"
+                        }
+                    ]
+                }
+            ]
+            stringit = json.encode(ui)
+            pretty = json.makepretty(stringit)
             for Player in Server.ActivePlayers:
                 if Player.basePlayer.IsSleeping():
                     Player.basePlayer.EndSleeping()
                 else:
-                    """
-                    #STOLEN BELOW FROM REMOVETOOL: OXIDE (For tests)
-                    ui = [  
-                        {
-                            "name": "RemoveMsg",
-                            "parent": "Overlay",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Image",
-                                    "color": "0.1 0.1 0.1 0.7",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.1 0.65",
-                                    "anchormax": "0.4 0.90"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "RemoveMsg",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "Remover Tool",
-                                    "fontSize": 15,
-                                    "align": "MiddleCenter",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.0 0.83",
-                                    "anchormax": "1.0 0.98"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "RemoveMsg",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "Time left",
-                                    "fontSize": 15,
-                                    "align": "MiddleLeft",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.05 0.65",
-                                    "anchormax": "0.3 0.80"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "RemoveMsg",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "(Seconds here)s",
-                                    "fontSize": 15,
-                                    "align": "MiddleLeft",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.4 0.65",
-                                    "anchormax": "1.0 0.80"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "RemoveMsg",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "Entity",
-                                    "fontSize": 15,
-                                    "align": "MiddleLeft",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.05 0.50",
-                                    "anchormax": "0.3 0.65"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "RemoveMsg",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "(Entity Name here)",
-                                    "fontSize": 15,
-                                    "align": "MiddleLeft",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.4 0.50",
-                                    "anchormax": "1.0 0.65"
-                                }
-                            ]
-                    },
-                    {
-                        "parent": "RemoveMsg",
-                        "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "Cost",
-                                    "fontSize": 15,
-                                    "align": "MiddleLeft",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.05 0.0",
-                                    "anchormax": "0.3 0.50"
-                                }
-                            ]
-                        },
-                    {
-                        "parent": "RemoveMsg",
-                        "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "(Costs here)",
-                                    "fontSize": 15,
-                                    "align": "MiddleLeft",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.4 0.0",
-                                    "anchormax": "1.0 0.5"
-                                }
-                            ]
-                        }
-                    ]
-                    """
-                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "AcceptRules")
-                    Util.Log("Destroyed")
-                    ui = [
-                        {
-                            "name": "AcceptRules",
-                            "parent": "Overlay",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Image",
-                                    "color": "0.1 0.1 0.1 1",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0 0",
-                                    "anchormax": "1 1"
-                                },
-                                {
-                                    "type": "NeedsCursor"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "AcceptRules",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "TEST",
-                                    "fontSize": 20,
-                                    "align": "MiddleCenter",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0 0.1",
-                                    "anchormax": "1 0.9"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "BtnAccept",
-                            "parent": "AcceptRules",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Button",
-                                    "close": "AcceptRules",
-                                    "color": "0.08 0.71 0.12 0.2",
-                                    "imagetype": "Tiled"
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.2 0.16",
-                                    "anchormax": "0.4 0.20"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "BtnAccept",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": "Accept",
-                                    "fontSize": 20,
-                                    "align": "MiddleCenter"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "BtnDontAccept",
-                            "parent": "AcceptRules",
-                            "components":
-                            [
-                                {
-                                    "close": "AcceptRules",
-                                    "type": "UnityEngine.UI.Button",
-                                    "color": "0.9 0.23 0.23 0.2",
-                                    "imagetype": "Tiled"
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.6 0.16",
-                                    "anchormax": "0.8 0.20"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "BtnDontAccept",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "close": "AcceptRules",
-                                    "text": "Dont Accept",
-                                    "fontSize": 20,
-                                    "align": "MiddleCenter"
-                                }
-                            ]
-                        }
-                    ]
-                    stringit = json.encode(ui)
-                    pretty = json.makepretty(stringit)
-                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", "AcceptRules")
-                    Util.Log("New one created")
-                    # TODO: Fix this UI bullshit not showing.. wtf!
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "TTT")
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", pretty)
             # Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)))
             self.countdown -= 1
         else:
             timer.Kill()
             for Player in Server.ActivePlayers:
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "TTT")
                 if Player.basePlayer.IsSleeping():
                     Player.basePlayer.EndSleeping()
                 else:
