@@ -14,14 +14,14 @@ path = Util.GetPublicFolder()
 sys.path.append(path + "\\Python\\Lib\\")
 try:
     import random
-    # import time
+    import datetime
+    import time
 except ImportError:
     raise ImportError("Trouble in Terrorist Town: Can not find folder Lib [Pluton\Python\Lib] *DOWNLOAD: http://forum.pluton-team.org/resources/ironpython-extra-libs.43/*")
-sys.path.append(path + "\\Python\\JSON\\")
 try:
     import json
 except ImportError:
-    raise ImportError("Trouble in Terrorist Town: Can not find folder JSON [Pluton\Python\JSON] *DOWNLOAD: http://forum.pluton-team.org/resources/microjson.54/*")
+    raise ImportError("Trouble in Terrorist Town: Can not find folder JSON in Libs folder [Pluton\Python\JSON] *DOWNLOAD: http://forum.pluton-team.org/resources/microjson.54/*")
 
 rgbstringtemplate = re.compile(r'#[a-fA-F0-9]{6}$')
 KillData = {}
@@ -34,6 +34,8 @@ class TroubleinTerroristTown:
     amountofterrorists = 0
     amountofinnocents = 0
     countdown = 0
+    matchlength = 0
+    prepperiod = 0
 
     def On_PluginInit(self):
         terroristdata[0] = 1
@@ -65,7 +67,7 @@ class TroubleinTerroristTown:
             #ini.AddSetting("Settings", "", "")
             ini.AddSetting("Messages", "PrepPeriod", "Game will start countdown in %Time% seconds")
             ini.AddSetting("Messages", "Not Enough Players", "Not enough players to start! Retrying in: %Time% seconds")
-            ini.AddSetting("Messages", "CountDown", "Game starting in: %Time% seconds")
+            ini.AddSetting("Messages", "CountDown", "Game starting in: %Time%")
             ini.AddSetting("Messages", "GameStarted", "Preparation period is now over! Find the Terrorist!")
             ini.AddSetting("Messages", "Winner", "%Winner%'s wins!")
             ini.AddSetting("Messages", "Reset", "Resetting game in %Time% seconds...")
@@ -86,7 +88,7 @@ class TroubleinTerroristTown:
         # DataStore.Add("TTT", "DestroyableDeloy", ini.GetBoolSetting("Settings", "Destroyable Deloyables"))
         DataStore.Add("TTT", "CoolDown", self.Tryint(ini.GetSetting("Settings", "CountDown")))
         DataStore.Add("TTT", "KillAmount", self.Tryint(ini.GetSetting("Settings", "KillMistakeAmount")))
-        DataStore.Add("TTT", "MatchLength", self.Tryint(ini.GetSetting("Settings", "Match length")) * 1000)
+        DataStore.Add("TTT", "MatchLength", self.Tryint(ini.GetSetting("Settings", "Match length")))
         DataStore.Add("TTT", "ResetMatch", self.Tryint(ini.GetSetting("Settings", "ResetTime")) * 1000)
         DataStore.Add("TTT", "LeaveMessage", ini.GetBoolSetting("Settings", "Leave Messages"))
         # DataStore.Add("TTT", "", ini.GetSetting("Settings", ""))
@@ -102,7 +104,10 @@ class TroubleinTerroristTown:
         DataStore.Add("TTT", "MSGLeave", self.ColorizeMessage(ini.GetSetting("Messages", "LeaveMessage")))
         DataStore.Add("TTT", "MSGOutOfTime", self.ColorizeMessage(ini.GetSetting("Messages", "Ran out of time")))
         # DataStore.Add("TTT", "MSG", ini.GetSetting("Messages", ""))
-        self.countdown = DataStore.Get("TTT", "CoolDown")
+        self.countdown = int(DataStore.Get("TTT", "CoolDown"))
+        self.matchlength = int(DataStore.Get("TTT", "MatchLength"))
+        self.prepperiod = int(DataStore.Get("TTT", "PrepPeriodTime") / 1000)
+        self.clearui()
         self.startgame()
 
     def ColorizeMessage(self, String):
@@ -137,11 +142,345 @@ class TroubleinTerroristTown:
             return number
         except Exception, error:
             Plugin.Log("ErrorLog", "Tryint: " + str(error))
+            Util.Log("Trouble in Terrorist Town: Can not convert string to int (String was not a number!) Check Settings.ini")
             return None
+        
+    def GuiHUDCallback(self, timer):
+        #time.strftime("%M:%S", time.gmtime(Seconds))
+        if DataStore.Get("TTT", "PrepPeriod"):
+            if DataStore.Get("TTT", "DisableKilling"):
+                DataStore.Add("TTT", "DisableKilling", True)
+            PrepPeriodui = [
+                {
+                    "name": "PrepPeriodui",
+                    "parent": "Overlay",
+                    "components":
+                    [
+                        {
+                            "type": "UnityEngine.UI.Image",
+                            "color": "0.1 0.1 0.1 1",
+                        },
+                        {
+                            "type": "RectTransform",
+                            "anchormin": "0.821 0.15",
+                            "anchormax": "0.973 0.2"
+                        }
+                    ]
+                },
+                {
+                    "parent": "PrepPeriodui",
+                    "components":
+                    [
+                        {
+                            "type": "UnityEngine.UI.Text",
+                            "text": "Awaiting Players",
+                            "fontSize": 20,
+                            "align": "MiddleCenter",
+                        },
+                        {
+                            "type": "RectTransform",
+                            "anchormin": "0 0",
+                            "anchormax": "0.75 1"
+                        }
+                    ]
+                },
+                {
+                    "parent": "PrepPeriodui",
+                    "components":
+                    [
+                        {
+                            "type": "UnityEngine.UI.Text",
+                            "text": str(time.strftime("%M:%S", time.gmtime(self.prepperiod))),
+                            "fontSize": 20,
+                            "align": "MiddleCenter",
+                        },
+                        {
+                            "type": "RectTransform",
+                            "anchormin": "0.7 0",
+                            "anchormax": "1 1"
+                        }
+                    ]
+                }
+            ]
+            stringit1 = json.encode(PrepPeriodui)
+            PrepPeriod = json.makepretty(stringit1)
+            if self.prepperiod > 0:
+                for Player in Server.ActivePlayers:
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "PrepPeriodui")
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", PrepPeriod)
+                self.prepperiod -= 1
+            else:
+                for Player in Server.ActivePlayers:
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "PrepPeriodui")
+                if len(Server.ActivePlayers) >= DataStore.Get("TTT", "MinPlayers"):
+                    if len(Server.ActivePlayers) == 0:
+                        self.prepperiod = DataStore.Get("TTT", "PrepPeriodTime") / 1000
+                        return
+                    else:
+                        for Player in Server.SleepingPlayers:
+                            Player.Kill()
+                        self.setTerrorist()
+                        self.setInnocent()
+                        DataStore.Remove("TTT", "PrepPeriod")
+                        DataStore.Add("TTT", "On_PlayerWakeUp", True)
+                        DataStore.Add("TTT", "CountDownPeriod", True)
+                        for Player in Server.ActivePlayers:
+                            Player.Kill()
+                            Player.basePlayer.Respawn()
+                            Player.basePlayer.metabolism.calories.value = 1000
+                            Player.basePlayer.metabolism.hydration.value = 1000
+                            Player.Health = 100
+                            PlayerLocData[Player.SteamID] = Player.Location
+                            DataStore.Add("TTT", "In-Game:" + Player.SteamID, True)
+                            for item in Player.Inventory.AllItems():
+                                item._item.RemoveFromContainer()
+                            if self.findgroup(Player) == "Terrorist":
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boonie Hat"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Leather Gloves"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Hoodie"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Pants"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boots"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Custom SMG"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Pump Shotgun"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Cooked Wolf Meat"), 20)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Bone Knife"), 1)
+                                Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("Pistol Bullet"), 500)
+                                Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
+                            else:
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boonie Hat"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Leather Gloves"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Hoodie"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Pants"), 1)
+                                Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boots"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Custom SMG"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Pump Shotgun"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Cooked Wolf Meat"), 20)
+                                Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Machete"), 1)
+                                Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("Pistol Bullet"), 500)
+                                Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
+                                # Player.Inventory.Add()
+                        Plugin.CreateTimer("CountDown", 1000).Start()
+                        Plugin.CreateTimer("FreezePlayers", int(DataStore.Get("TTT", "FreezerTimer"))).Start()
+                else:
+                    self.prepperiod = DataStore.Get("TTT", "PrepPeriodTime") / 1000
+                    return
+        elif DataStore.Get("TTT", "CountDownPeriod"):
+            if self.countdown > 0:
+                CountDownui = [
+                    {
+                        "name": "CountDownui",
+                        "parent": "Overlay",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Image",
+                                "color": "0.1 0.1 0.1 1",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0.821 0.15",
+                                "anchormax": "0.973 0.2"
+                            }
+                        ]
+                    },
+                    {
+                        "parent": "CountDownui",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Text",
+                                "text": "Starting in",
+                                "fontSize": 20,
+                                "align": "MiddleCenter",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0 0",
+                                "anchormax": "0.75 1"
+                            }
+                        ]
+                    },
+                    {
+                        "parent": "CountDownui",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Text",
+                                "text": str(time.strftime("%M:%S", time.gmtime(self.countdown))),
+                                "fontSize": 20,
+                                "align": "MiddleCenter",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0.7 0",
+                                "anchormax": "1 1"
+                            }
+                        ]
+                    }
+                ]
+                stringit1 = json.encode(CountDownui)
+                CountDown = json.makepretty(stringit1)
+                for Player in Server.ActivePlayers:
+                    if Player.basePlayer.IsSleeping():
+                        Player.basePlayer.EndSleeping()
+                    else:
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "CountDownui")
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", CountDown)
+                self.countdown -= 1
+            else:
+                DataStore.Remove("TTT", "CountDownPeriod")
+                for Player in Server.ActivePlayers:
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "CountDownui")
+                    Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder")
+                                       .Replace("%Group%", self.findgroup(Player)))
+                    if Player.basePlayer.IsSleeping():
+                        Player.basePlayer.EndSleeping()
+                    else:
+                        continue
+                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGGameStarted"))
+                Plugin.GetTimer("FreezePlayers").Kill()
+                DataStore.Remove("TTT", "DisableKilling")
+                DataStore.Add("TTT", "INGAME", True)
+        elif DataStore.Get("TTT", "INGAME"):
+            if self.matchlength > 0:
+                Terroristui = [
+                    {
+                        "name": "Terroristui",
+                        "parent": "Overlay",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Image",
+                                "color": "0.1 0.1 0.1 1",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0.821 0.15",
+                                "anchormax": "0.973 0.2"
+                            }
+                        ]
+                    },
+                    {
+                        "parent": "Terroristui",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Text",
+                                "text": "Terrorist",
+                                "fontSize": 20,
+                                "align": "MiddleCenter",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0 0",
+                                "anchormax": "0.75 1"
+                            }
+                        ]
+                    },
+                    {
+                        "parent": "Terroristui",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Text",
+                                "text": str(time.strftime("%M:%S", time.gmtime(self.matchlength))),
+                                "fontSize": 20,
+                                "align": "MiddleCenter",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0.7 0",
+                                "anchormax": "1 1"
+                            }
+                        ]
+                    }
+                ]
+                stringit = json.encode(Terroristui)
+                TerroristUI = json.makepretty(stringit)
+                Innocentui = [
+                    {
+                        "name": "Innocentui",
+                        "parent": "Overlay",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Image",
+                                "color": "0.1 0.1 0.1 1",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0.821 0.15",
+                                "anchormax": "0.973 0.2"
+                            }
+                        ]
+                    },
+                    {
+                        "parent": "Innocentui",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Text",
+                                "text": "Innocent",
+                                "fontSize": 20,
+                                "align": "MiddleCenter",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0 0",
+                                "anchormax": "0.75 1"
+                            }
+                        ]
+                    },
+                    {
+                        "parent": "Innocentui",
+                        "components":
+                        [
+                            {
+                                "type": "UnityEngine.UI.Text",
+                                "text": str(time.strftime("%M:%S", time.gmtime(self.matchlength))),
+                                "fontSize": 20,
+                                "align": "MiddleCenter",
+                            },
+                            {
+                                "type": "RectTransform",
+                                "anchormin": "0.7 0",
+                                "anchormax": "1 1"
+                            }
+                        ]
+                    }
+                ]
+                stringit1 = json.encode(Innocentui)
+                InnocentUI = json.makepretty(stringit1)
+                for Player in Server.ActivePlayers:
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "Innocentui")
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "Terroristui")
+                    if self.findgroup(Player) == "Terrorist":
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", TerroristUI)
+                    else:
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", InnocentUI)
+                self.matchlength -= 1
+            else:
+                self.clearui()
+                timer.Stop()
+                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGOutOfTime"))
+                self.endgame("Terrorist")
+                # TODO: UI with winner (Maybe player name?)
+                # TODO: Add a check to see if a player is allowed to see UI's (Dead/Alive/Specatating)
+
+    def clearui(self):
+        for Player in Server.ActivePlayers:
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "PrepPeriodui")
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "CountDownui")
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "Innocentui")
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "Terroristui")
 
     def endgame(self, winner):
         DataStore.Add("TTT", "PrepPeriod", True)
-        DataStore.Add("TTT", "GAMEOVER", True)
+        DataStore.Remove("TTT", "INGAME")
         Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGWinner").Replace("%Winner%", winner))
         Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReset")
                              .Replace("%Time%", str(DataStore.Get("TTT", "ResetMatch") / 1000)))
@@ -149,16 +488,21 @@ class TroubleinTerroristTown:
 
     def ResetCallback(self, timer):
         timer.Kill()
-        Plugin.GetTimer("MatchLength").Kill()
         DataStore.Remove("TTT", "On_PlayerWakeUp")
         for Player in Server.ActivePlayers:
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "PrepPeriodui")
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "CountDownui")
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "Innocentui")
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "Terroristui")
             DataStore.Remove("TTT", "USER:" + Player.SteamID)
             Player.Kill()
             Player.basePlayer.Respawn()
         KillData.clear()
         terroristdata.clear()
         PlayerLocData.clear()
-        self.countdown = DataStore.Get("TTT", "CoolDown")
+        self.countdown = int(DataStore.Get("TTT", "CoolDown"))
+        self.matchlength = int(DataStore.Get("TTT", "MatchLength"))
+        self.prepperiod = int(DataStore.Get("TTT", "PrepPeriodTime") / 1000)
         self.amountofterrorists = 0
         self.amountofinnocents = 0
         self.startgame()
@@ -169,67 +513,14 @@ class TroubleinTerroristTown:
             if Player.basePlayer.IsSpectating():
                 Player.basePlayer.StopSpectating()
                 Player.basePlayer.Respawn()
-        # Display GUI with Prep time instead of broadcast
-        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGPrepPeriod")
-                             .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
-        Plugin.CreateTimer("PrepPeriod", int(DataStore.Get("TTT", "PrepPeriodTime"))).Start()
-
-    def PrepPeriodCallback(self, timer):
-        if len(Server.ActivePlayers) >= DataStore.Get("TTT", "MinPlayers"):
-            if len(Server.ActivePlayers) == 0:
-                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
-                                     .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
-            else:
-                timer.Kill()
-                for Player in Server.SleepingPlayers:
-                    Player.Kill()
-                self.setTerrorist()
-                self.setInnocent()
-                DataStore.Add("TTT", "On_PlayerWakeUp", True)
-                for Player in Server.ActivePlayers:
-                    Player.Kill()
-                    Player.basePlayer.Respawn()
-                    Player.basePlayer.metabolism.calories.value = 1000
-                    Player.basePlayer.metabolism.hydration.value = 1000
-                    Player.Health = 100
-                    PlayerLocData[Player.SteamID] = Player.Location
-                    DataStore.Add("TTT", "In-Game:" + Player.SteamID, True)
-                    for item in Player.Inventory.AllItems():
-                        item._item.RemoveFromContainer()
-                    if self.findgroup(Player) == "Terrorist":
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boonie Hat"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Leather Gloves"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Hoodie"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Pants"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boots"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Custom SMG"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Pump Shotgun"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Cooked Wolf Meat"), 20)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Bone Knife"), 1)
-                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("Pistol Bullet"), 500)
-                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
-                    else:
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boonie Hat"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Leather Gloves"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Hoodie"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Pants"), 1)
-                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boots"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Custom SMG"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Pump Shotgun"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Cooked Wolf Meat"), 20)
-                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Machete"), 1)
-                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("Pistol Bullet"), 500)
-                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
-                        # Player.Inventory.Add()
-                Plugin.CreateTimer("CountDown", 1000).Start()
-                Plugin.CreateTimer("FreezePlayers", int(DataStore.Get("TTT", "FreezerTimer"))).Start()
+        if Plugin.GetTimer("GuiHUD") is None:
+            Plugin.CreateTimer("GuiHUD", 1000).Start()
         else:
-            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
-                                 .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
+            Plugin.GetTimer("GuiHUD").Start()
+        # Display GUI with Prep time instead of broadcast
+        #Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGPrepPeriod")
+                             #.Replace("%Time%", str(time.strftime("%M:%S", time.gmtime(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))))
+        #Plugin.CreateTimer("PrepPeriod", int(DataStore.Get("TTT", "PrepPeriodTime"))).Start()
 
     def FreezePlayersCallback(self, timer):
         for Player in Server.ActivePlayers:
@@ -242,76 +533,7 @@ class TroubleinTerroristTown:
     def On_PlayerWakeUp(self, Player):
         if DataStore.Get("TTT", "On_PlayerWakeUp"):
             if not DataStore.Get("TTT", "In-Game:" + Player.SteamID):
-                Player.basePlayer.StartSpectating()
-
-    def CountDownCallback(self, timer):
-        if self.countdown > 0:
-            ui = [
-                {
-                    "name": "TTT",
-                    "parent": "Overlay",
-                    "components":
-                    [
-                        {
-                            "type": "UnityEngine.UI.Image",
-                            "color": "0.1 0.1 0.1 1",
-                        },
-                        {
-                            "type": "RectTransform",
-                            "anchormin": "0.44 0.94",
-                            "anchormax": "0.56 0.98"
-                        }
-                    ]
-                },
-                {
-                    "parent": "TTT",
-                    "components":
-                    [
-                        {
-                            "type": "UnityEngine.UI.Text",
-                            "text": DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)),
-                            "fontSize": 20,
-                            "align": "MiddleCenter",
-                        },
-                        {
-                            "type": "RectTransform",
-                            "anchormin": "0.01 0.01",
-                            "anchormax": "0.91 0.91"
-                        }
-                    ]
-                }
-            ]
-            stringit = json.encode(ui)
-            pretty = json.makepretty(stringit)
-            for Player in Server.ActivePlayers:
-                if Player.basePlayer.IsSleeping():
-                    Player.basePlayer.EndSleeping()
-                else:
-                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "TTT")
-                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", pretty)
-            # Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)))
-            self.countdown -= 1
-        else:
-            timer.Kill()
-            for Player in Server.ActivePlayers:
-                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "TTT")
-                if Player.basePlayer.IsSleeping():
-                    Player.basePlayer.EndSleeping()
-                else:
-                    continue
-            for Player in Server.ActivePlayers:
-                # test.DestroyUI()
-                Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder")
-                                   .Replace("%Group%", self.findgroup(Player)))
-            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGGameStarted"))
-            Plugin.GetTimer("FreezePlayers").Kill()
-            DataStore.Add("TTT", "PrepPeriod", False)
-            Plugin.CreateTimer("MatchLength", int(DataStore.Get("TTT", "MatchLength"))).Start()
-
-    def MatchLengthCallback(self, timer):
-        timer.Kill()
-        Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGOutOfTime"))
-        self.endgame("Terrorist")
+                Player.basePlayer.StartSpectating()        
 
     def PlayerDisconnected(self, Player):
         if not DataStore.Get("TTT", "GAMEOVER"):
@@ -345,15 +567,13 @@ class TroubleinTerroristTown:
     def setTerrorist(self):
         try:
             totalplayers = Server.ActivePlayers
-            self.amountofterrorists = round(len(totalplayers) / 3, 0)
             need = round(len(totalplayers) / 3, 0)
             need = str(need).split(".")[0]
-            Util.Log(need)
             need = int(need)
             if need == 0:
-                self.amountofterrorists = 1
                 need = 1
-            maax = len(totalplayers) + 1
+            maax = need + 1
+            self.amountofterrorists = need
             randlist = random.sample(xrange(0, maax), need)
             count = 0
             for Player in totalplayers:
@@ -391,7 +611,7 @@ class TroubleinTerroristTown:
 
     def On_PlayerHurt(self, PlayerHurtEvent):
         try:
-            if DataStore.Get("TTT", "PrepPeriod"):
+            if DataStore.Get("TTT", "DisableKilling"):
                 for x in range(0, len(PlayerHurtEvent.DamageAmounts)):
                     PlayerHurtEvent.DamageAmounts[x] = 0
             else:
@@ -411,8 +631,12 @@ class TroubleinTerroristTown:
         # E.G: Attacker Name *Gun symbol* Victim Name
         try:
             PlayerDeathEvent.dropLoot = False
-            if not DataStore.Get("TTT", "PrepPeriod"):
+            if DataStore.Get("TTT", "INGAME"):
                 Victim = PlayerDeathEvent.Victim
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None, "DestroyUI", "PrepPeriodui")
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None, "DestroyUI", "CountDownui")
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None, "DestroyUI", "Innocentui")
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None, "DestroyUI", "Terroristui")
                 if PlayerDeathEvent.Attacker.IsPlayer():
                     Attacker = PlayerDeathEvent.Attacker.ToPlayer()
                     if self.findgroup(Victim) == "Terrorist":
@@ -466,3 +690,124 @@ class TroubleinTerroristTown:
                 DataStore.Remove("TTT", "In-Game:" + Victim.SteamID)
         except Exception, error:
             Plugin.Log("ErrorLog", "On_PlayerDied: " + str(error))
+
+"""
+    def PrepPeriodCallback(self, timer):
+        if len(Server.ActivePlayers) >= DataStore.Get("TTT", "MinPlayers"):
+            if len(Server.ActivePlayers) == 0:
+                Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
+                                     .Replace("%Time%", str(time.strftime("%M:%S", time.gmtime(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))))
+            else:
+                timer.Kill()
+                for Player in Server.SleepingPlayers:
+                    Player.Kill()
+                self.setTerrorist()
+                self.setInnocent()
+                DataStore.Add("TTT", "On_PlayerWakeUp", True)
+                for Player in Server.ActivePlayers:
+                    Player.Kill()
+                    Player.basePlayer.Respawn()
+                    Player.basePlayer.metabolism.calories.value = 1000
+                    Player.basePlayer.metabolism.hydration.value = 1000
+                    Player.Health = 100
+                    PlayerLocData[Player.SteamID] = Player.Location
+                    DataStore.Add("TTT", "In-Game:" + Player.SteamID, True)
+                    for item in Player.Inventory.AllItems():
+                        item._item.RemoveFromContainer()
+                    if self.findgroup(Player) == "Terrorist":
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boonie Hat"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Leather Gloves"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Hoodie"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Pants"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boots"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Custom SMG"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Pump Shotgun"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Cooked Wolf Meat"), 20)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Bone Knife"), 1)
+                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("Pistol Bullet"), 500)
+                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
+                    else:
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boonie Hat"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Leather Gloves"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Hoodie"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Pants"), 1)
+                        Player.Inventory.InnerWear.AddItem(Find.ItemDefinition("Boots"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Custom SMG"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Pump Shotgun"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Medical Syringe"), 1)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Cooked Wolf Meat"), 20)
+                        Player.Inventory.InnerBelt.AddItem(Find.ItemDefinition("Machete"), 1)
+                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("Pistol Bullet"), 500)
+                        Player.Inventory.InnerMain.AddItem(Find.ItemDefinition("12 Gauge Buckshot"), 64)
+                        # Player.Inventory.Add()
+                Plugin.CreateTimer("CountDown", 1000).Start()
+                Plugin.CreateTimer("FreezePlayers", int(DataStore.Get("TTT", "FreezerTimer"))).Start()
+        else:
+            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGNotEnoughPlayers")
+                                 .Replace("%Time%", str(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))
+
+    def CountDownCallback(self, timer):
+        if self.countdown > 0:
+            countdown = [
+                {
+                    "name": "CountDown",
+                    "parent": "Overlay",
+                    "components":
+                    [
+                        {
+                            "type": "UnityEngine.UI.Image",
+                            "color": "0.1 0.1 0.1 1",
+                        },
+                        {
+                            "type": "RectTransform",
+                            "anchormin": "0.4 0.94",
+                            "anchormax": "0.6 0.98"
+                        }
+                    ]
+                },
+                {
+                    "parent": "CountDown",
+                    "components":
+                    [
+                        {
+                            "type": "UnityEngine.UI.Text",
+                            "text": DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(time.strftime("%M:%S", time.gmtime(self.countdown)))),
+                            "fontSize": 20,
+                            "align": "MiddleCenter",
+                        },
+                        {
+                            "type": "RectTransform",
+                            "anchormin": "0.01 0.01",
+                            "anchormax": "0.91 0.91"
+                        }
+                    ]
+                }
+            ]
+            stringit = json.encode(countdown)
+            countdown = json.makepretty(stringit)
+            for Player in Server.ActivePlayers:
+                if Player.basePlayer.IsSleeping():
+                    Player.basePlayer.EndSleeping()
+                else:
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "CountDown")
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", countdown)
+            # Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGCountDown").Replace("%Time%", str(self.countdown)))
+            self.countdown -= 1
+        else:
+            timer.Kill()
+            for Player in Server.ActivePlayers:
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "CountDown")
+                Player.MessageFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGReminder")
+                                   .Replace("%Group%", self.findgroup(Player)))
+                if Player.basePlayer.IsSleeping():
+                    Player.basePlayer.EndSleeping()
+                else:
+                    continue
+            Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGGameStarted"))
+            Plugin.GetTimer("FreezePlayers").Kill()
+            DataStore.Add("TTT", "PrepPeriod", False)
+            Plugin.CreateTimer("MatchLength", int(DataStore.Get("TTT", "MatchLength"))).Start()
+"""
