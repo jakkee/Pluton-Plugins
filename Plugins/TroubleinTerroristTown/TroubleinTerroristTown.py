@@ -1,7 +1,7 @@
 __title__ = 'TroubleinTerroristTown'
 __author__ = 'Jakkee & DreTaX'
 __about__ = 'GameMode: Trouble in Terrorist Town'
-__version__ = '1.2Beta'
+__version__ = '1.3Beta'
 
 import clr
 clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp")
@@ -25,9 +25,162 @@ except ImportError:
 
 rgbstringtemplate = re.compile(r'#[a-fA-F0-9]{6}$')
 KillData = {}
-terroristdata = {}
 PlayerLocData = {}
 PluginSettings = {}
+# TODO: HUD ui may need to be moved, Playing with graphics.hud false currently (Just testing, Might keep)
+hud = [
+    {
+        "name": "hudui",
+        "parent": "Overlay",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.1 0.1 0.1 0.3",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.005",
+                "anchormax": "0.2 0.2"
+            }
+        ]
+    },
+    {
+        "parent": "hudui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.5 0.5 0.5 0.3",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0 0.67",
+                "anchormax": "0.7 1"
+            }
+        ]
+    },
+    {
+        "parent": "hudui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[INFOBOX]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0 0.67",
+                "anchormax": "0.7 1"
+            }
+        ]
+    },
+    {
+        "parent": "hudui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[TIME]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.7 0.67",
+                "anchormax": "1 1"
+            }
+        ]
+    }
+]
+health = [
+    {
+        "name": "healthui",
+        "parent": "Overlay",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.3 0.3 0.3 0.2",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.007 0.085",
+                "anchormax": "0.193 0.125"
+            }
+        ]
+    },
+    {
+        "parent": "healthui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.08 0.71 0.12 0.4",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0 0",
+                "anchormax": "[INTHEALTH] 1"
+            }
+        ]
+    },
+    {
+        "parent": "healthui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[HEALTH]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0 0",
+                "anchormax": "1 1"
+            }
+        ]
+    }
+]
+broadcast = [
+    {
+        "name": "broadcastui",
+        "parent": "Overlay",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.1 0.1 0.1 0.5",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.205 0.005",
+                "anchormax": "0.795 0.04"
+            }
+        ]
+    },
+    {
+        "parent": "broadcastui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[TEXT]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0 0",
+                "anchormax": "1 1"
+            }
+        ]
+    }
+]
+# End of UI's
 
 
 class TroubleinTerroristTown:
@@ -40,7 +193,6 @@ class TroubleinTerroristTown:
     resettime = 0
 
     def On_PluginInit(self):
-        terroristdata[0] = 1
         if not Plugin.IniExists("Settings"):
             Plugin.CreateIni("Settings")
             ini = Plugin.GetIni("Settings")
@@ -81,7 +233,7 @@ class TroubleinTerroristTown:
             ini.AddSetting("Messages", "Ran out of time", "The match has ended. [Time limit reached]")
             # ini.AddSetting("Messages", "", "")
             ini.Save()
-        # Todo: Storing values in the class should be faster than DS
+        """
         ini = Plugin.GetIni("Settings")
         DataStore.Flush("TTT")
         PluginSettings.clear()
@@ -93,7 +245,7 @@ class TroubleinTerroristTown:
         PluginSettings["CountDown"] = self.Tryint(ini.GetSetting("Settings", "CountDown"))
         PluginSettings["KillAmount"] = self.Tryint(ini.GetSetting("Settings", "KillMistakeAmount"))
         PluginSettings["MatchLength"] = self.Tryint(ini.GetSetting("Settings", "Match length"))
-        PluginSettings["ResetTime"] = self.Tryint(ini.GetSetting("Settings", "ResetTime")) * 1000
+        PluginSettings["ResetTime"] = self.Tryint(ini.GetSetting("Settings", "ResetTime"))
         PluginSettings["LeaveMessage"] = ini.GetBoolSetting("Settings", "Leave Messages")
         PluginSettings["MSGAwaitingPlayers"] = self.ColorizeMessage(ini.GetSetting("Messages", "AwaitingPlayers"))
         # PluginSettings["MSGNotEnoughPlayers"] = self.ColorizeMessage(ini.GetSetting("Messages", "Not Enough Players"))
@@ -106,10 +258,34 @@ class TroubleinTerroristTown:
         PluginSettings["MSGLeave"] = self.ColorizeMessage(ini.GetSetting("Messages", "LeaveMessage"))
         PluginSettings["MSGOutOfTime"] = self.ColorizeMessage(ini.GetSetting("Messages", "Ran out of time"))
         PluginSettings["MSGRoundOver"] = self.ColorizeMessage(ini.GetSetting("Messages", "Round Over"))
+        """
+        # Todo: Using own settings below because GetIni returns an error atm
+        DataStore.Flush("TTT")
+        PluginSettings.clear()
+        PluginSettings["SystemName"] = "Trouble in Terrorist Town"
+        PluginSettings["PrepPeriodTime"] = 30000
+        PluginSettings["FreezerTimer"] = 600
+        PluginSettings["MinPlayers"] = 1
+        PluginSettings["DestroyableBuilding"] = False
+        PluginSettings["CountDown"] = 20
+        PluginSettings["KillAmount"] = 0
+        PluginSettings["MatchLength"] = 300
+        PluginSettings["ResetTime"] = 10
+        PluginSettings["LeaveMessage"] = True
+        PluginSettings["MSGAwaitingPlayers"] = "Awaiting players"
+        PluginSettings["MSGCountDown"] = "Starting in.."
+        PluginSettings["MSGGameStarted"] = "Preparation period is now over! Find the Terrorist!"
+        PluginSettings["MSGWinner"] = "%Winner%'s win!"
+        PluginSettings["MSGReset"] = "Resetting game in %Time% seconds..."
+        PluginSettings["MSGReminder"] = "Remember you're a(n): %Group%"
+        PluginSettings["MSGLastLeave"] = "The last %Group% alive left the server!"
+        PluginSettings["MSGLeave"] = "A(n) %Group% left the server!"
+        PluginSettings["MSGOutOfTime"] = "The match has ended. [Time limit reached]"
+        PluginSettings["MSGRoundOver"] = "Round over"
         self.countdown = PluginSettings["CountDown"]
         self.matchlength = PluginSettings["MatchLength"]
         self.prepperiod = PluginSettings["PrepPeriodTime"] / 1000
-        self.resettime = PluginSettings["ResetTime"] / 1000
+        self.resettime = PluginSettings["ResetTime"]
         self.clearui()
         self.startgame()
 
@@ -149,70 +325,25 @@ class TroubleinTerroristTown:
             return None
         
     def GuiHUDCallback(self, timer):
-        #time.strftime("%M:%S", time.gmtime(Seconds))
         if DataStore.Get("TTT", "PrepPeriod"):
             if not DataStore.Get("TTT", "DisableKilling"):
                 DataStore.Add("TTT", "DisableKilling", True)
-            if self.prepperiod > 0:
-                PrepPeriodui = [
-                    {
-                        "name": "PrepPeriodui",
-                        "parent": "Overlay",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Image",
-                                "color": "0.1 0.1 0.1 1",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.821 0.15",
-                                "anchormax": "0.973 0.2"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "PrepPeriodui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": PluginSettings["MSGAwaitingPlayers"],
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0 0",
-                                "anchormax": "0.75 1"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "PrepPeriodui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": str(time.strftime("%M:%S", time.gmtime(self.prepperiod))),
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.7 0",
-                                "anchormax": "1 1"
-                            }
-                        ]
-                    }
-                ]
-                stringit = json.encode(PrepPeriodui)
-                PrepPeriodUI = json.makepretty(stringit)
+            if self.prepperiod >= 0:
                 for Player in Server.ActivePlayers:
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "DestroyUI", "PrepPeriodui")
+                                                               "DestroyUI", "healthui")
+                    string = json.encode(health)
+                    jsonUI = json.makepretty(string)
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
+                                                               jsonUI.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                               .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "AddUI", PrepPeriodUI)
+                                                               "DestroyUI", "hudui")
+                    string = json.encode(hud)
+                    jsonUI = json.makepretty(string)
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                               "AddUI", jsonUI.Replace("[INFOBOX]", PluginSettings["MSGAwaitingPlayers"])
+                                                               .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.prepperiod)))))
                 self.prepperiod -= 1
             elif len(Server.ActivePlayers) >= PluginSettings["MinPlayers"]:
                 if len(Server.ActivePlayers) == 0:
@@ -227,8 +358,8 @@ class TroubleinTerroristTown:
                     DataStore.Add("TTT", "On_PlayerWakeUp", True)
                     DataStore.Add("TTT", "CountDownPeriod", True)
                     for Player in Server.ActivePlayers:
-                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection),
-                                                                   None, "DestroyUI", "PrepPeriodui")
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                   "DestroyUI", "hudui")
                         Player.Kill()
                         Player.basePlayer.Respawn()
                         Player.basePlayer.metabolism.calories.value = 1000
@@ -273,68 +404,19 @@ class TroubleinTerroristTown:
                 self.prepperiod = PluginSettings["PrepPeriodTime"] / 1000
                 return
         elif DataStore.Get("TTT", "CountDownPeriod"):
-            if self.countdown > 0:
-                CountDownui = [
-                    {
-                        "name": "CountDownui",
-                        "parent": "Overlay",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Image",
-                                "color": "0.1 0.1 0.1 1",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.821 0.15",
-                                "anchormax": "0.973 0.2"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "CountDownui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": PluginSettings["MSGCountDown"],
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0 0",
-                                "anchormax": "0.65 1"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "CountDownui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": str(time.strftime("%M:%S", time.gmtime(self.countdown))),
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.7 0",
-                                "anchormax": "1 1"
-                            }
-                        ]
-                    }
-                ]
-                stringit1 = json.encode(CountDownui)
-                CountDown = json.makepretty(stringit1)
+            if self.countdown >= 0:
                 for Player in Server.ActivePlayers:
                     if DataStore.Get("TTT", "In-Game:" + Player.SteamID):
                         if Player.basePlayer.IsSleeping():
                             Player.basePlayer.EndSleeping()
                         else:
-                            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "CountDownui")
-                            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", CountDown)
+                            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                       "DestroyUI", "hudui")
+                            string = json.encode(hud)
+                            jsonUI = json.makepretty(string)
+                            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                       "AddUI", jsonUI.Replace("[INFOBOX]", PluginSettings["MSGCountDown"])
+                                                                       .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.countdown)))))
                     else:
                         continue
                 self.countdown -= 1
@@ -342,137 +424,39 @@ class TroubleinTerroristTown:
                 DataStore.Remove("TTT", "CountDownPeriod")
                 for Player in Server.ActivePlayers:
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "DestroyUI", "CountDownui")
-                    Player.MessageFrom(PluginSettings["SystemName"], PluginSettings["MSGReminder"]
-                                       .Replace("%Group%", self.findgroup(Player)))
+                                                                       "DestroyUI", "hudui")
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                               "DestroyUI", "broadcastui")
+                    string = json.encode(broadcast)
+                    jsonUI = json.makepretty(string)
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                               "AddUI", jsonUI
+                                                               .Replace("[TEXT]", PluginSettings["MSGReminder"]
+                                                                        .Replace("%Group%", self.findgroup(Player))))
                     if Player.basePlayer.IsSleeping():
                         Player.basePlayer.EndSleeping()
                     else:
                         continue
+                if Plugin.GetTimer("RemoveBroadcast") is not None:
+                    Plugin.GetTimer("RemoveBroadcast").Kill()
+                Plugin.CreateTimer("RemoveBroadcast", 4000).Start()
+                # Todo: Change Server.Broadcast to broadcast UI
                 Server.BroadcastFrom(PluginSettings["SystemName"], PluginSettings["MSGGameStarted"])
                 Plugin.GetTimer("FreezePlayers").Kill()
                 DataStore.Remove("TTT", "DisableKilling")
                 DataStore.Add("TTT", "INGAME", True)
         elif DataStore.Get("TTT", "INGAME"):
-            if self.matchlength > 0:
-                Terroristui = [
-                    {
-                        "name": "Terroristui",
-                        "parent": "Overlay",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Image",
-                                "color": "0.1 0.1 0.1 1",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.821 0.15",
-                                "anchormax": "0.973 0.2"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "Terroristui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": "Terrorist",
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0 0",
-                                "anchormax": "0.75 1"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "Terroristui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": str(time.strftime("%M:%S", time.gmtime(self.matchlength))),
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.7 0",
-                                "anchormax": "1 1"
-                            }
-                        ]
-                    }
-                ]
-                stringit = json.encode(Terroristui)
-                TerroristUI = json.makepretty(stringit)
-                Innocentui = [
-                    {
-                        "name": "Innocentui",
-                        "parent": "Overlay",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Image",
-                                "color": "0.1 0.1 0.1 1",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.821 0.15",
-                                "anchormax": "0.973 0.2"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "Innocentui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": "Innocent",
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0 0",
-                                "anchormax": "0.75 1"
-                            }
-                        ]
-                    },
-                    {
-                        "parent": "Innocentui",
-                        "components":
-                        [
-                            {
-                                "type": "UnityEngine.UI.Text",
-                                "text": str(time.strftime("%M:%S", time.gmtime(self.matchlength))),
-                                "fontSize": 20,
-                                "align": "MiddleCenter",
-                            },
-                            {
-                                "type": "RectTransform",
-                                "anchormin": "0.7 0",
-                                "anchormax": "1 1"
-                            }
-                        ]
-                    }
-                ]
-                stringit1 = json.encode(Innocentui)
-                InnocentUI = json.makepretty(stringit1)
+            # Util.Log("Called INGAME")
+            if self.matchlength >= 0:
                 for Player in Server.ActivePlayers:
                     if DataStore.Get("TTT", "In-Game:" + Player.SteamID):
-                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection),
-                                                                   None, "DestroyUI", "Innocentui")
-                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection),
-                                                                   None, "DestroyUI", "Terroristui")
-                        if self.findgroup(Player) == "Terrorist":
-                            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", TerroristUI)
-                        else:
-                            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", InnocentUI)
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                   "DestroyUI", "hudui")
+                        string = json.encode(hud)
+                        jsonUI = json.makepretty(string)
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                   "AddUI", jsonUI.Replace("[INFOBOX]", self.findgroup(Player))
+                                                                   .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.matchlength)))))
                     else:
                         continue
                 self.matchlength -= 1
@@ -482,129 +466,39 @@ class TroubleinTerroristTown:
                     Server.BroadcastFrom(PluginSettings["SystemName"], PluginSettings["MSGOutOfTime"])
                     self.endgame("Terrorist")
                 else:
-                    RoundOverui = [
-                        {
-                            "name": "RoundOverui",
-                            "parent": "Overlay",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Image",
-                                    "color": "0.1 0.1 0.1 1",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.821 0.15",
-                                    "anchormax": "0.973 0.2"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "RoundOverui",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": PluginSettings["MSGRoundOver"],
-                                    "fontSize": 20,
-                                    "align": "MiddleCenter",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0 0",
-                                    "anchormax": "0.75 1"
-                                }
-                            ]
-                        },
-                        {
-                            "parent": "RoundOverui",
-                            "components":
-                            [
-                                {
-                                    "type": "UnityEngine.UI.Text",
-                                    "text": str(time.strftime("%M:%S", time.gmtime(self.resettime))),
-                                    "fontSize": 20,
-                                    "align": "MiddleCenter",
-                                },
-                                {
-                                    "type": "RectTransform",
-                                    "anchormin": "0.7 0",
-                                    "anchormax": "1 1"
-                                }
-                            ]
-                        }
-                    ]
-                    stringit = json.encode(RoundOverui)
-                    RoundOverUI = json.makepretty(stringit)
                     for Player in Server.ActivePlayers:
-                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection),
-                                                                   None, "DestroyUI", "RoundOverui")
-                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection),
-                                                                   None, "AddUI", RoundOverUI)
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                   "DestroyUI", "hudui")
+                        string = json.encode(hud)
+                        jsonUI = json.makepretty(string)
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                   "AddUI", jsonUI.Replace("[INFOBOX]", PluginSettings["MSGRoundOver"])
+                                                                   .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.resettime)))))
                     self.resettime -= 1
+
 
     def clearui(self):
         for Player in Server.ActivePlayers:
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "Winnerui")
+                                                       "DestroyUI", "healthui")
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "RoundOverui")
+                                                       "DestroyUI", "hudui")
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "PrepPeriodui")
-            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "CountDownui")
-            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "Innocentui")
-            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "Terroristui")
+                                                       "DestroyUI", "healthui")
 
     def endgame(self, winner):
         DataStore.Add("TTT", "RoundOver", True)
-        # TODO: UI with winner (Maybe Player name?)
-        # Server.BroadcastFrom(PluginSettings["SystemName"], PluginSettings["MSGWinner"].Replace("%Winner%", winner))
-        Winnerui = [
-            {
-                "name": "Winnerui",
-                "parent": "Overlay",
-                "components":
-                [
-                    {
-                        "type": "UnityEngine.UI.Image",
-                        "color": "0.1 0.1 0.1 1",
-                    },
-                    {
-                        "type": "RectTransform",
-                        "anchormin": "0.4 0.94",
-                        "anchormax": "0.6 0.98"
-                    }
-                ]
-            },
-            {
-                "parent": "Winnerui",
-                "components":
-                [
-                    {
-                        "type": "UnityEngine.UI.Text",
-                        "text": PluginSettings["MSGWinner"].Replace("%Winner%", winner),
-                        "fontSize": 20,
-                        "align": "MiddleCenter",
-                    },
-                    {
-                        "type": "RectTransform",
-                        "anchormin": "0 0",
-                        "anchormax": "1 1"
-                    }
-                ]
-            }
-        ]
-        stringit = json.encode(Winnerui)
-        WinnerUI = json.makepretty(stringit)
         for Player in Server.ActivePlayers:
-            #CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", "Winnerui")
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "AddUI", WinnerUI)
-        Server.BroadcastFrom(PluginSettings["SystemName"], PluginSettings["MSGReset"]
-                             .Replace("%Time%", str(PluginSettings["ResetTime"] / 1000)))
+                                                       "DestroyUI", "broadcastui")
+            string = json.encode(broadcast)
+            jsonUI = json.makepretty(string)
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                       "AddUI", jsonUI
+                                                       .Replace("[TEXT]", PluginSettings["MSGWinner"].Replace("%Winner%", winner)))
+        if Plugin.GetTimer("RemoveBroadcast") is not None:
+            Plugin.GetTimer("RemoveBroadcast").Kill()
+        Plugin.CreateTimer("RemoveBroadcast", 8000).Start()
         Plugin.CreateTimer("Reset", PluginSettings["ResetTime"]).Start()
 
     def ResetCallback(self, timer):
@@ -618,27 +512,20 @@ class TroubleinTerroristTown:
         DataStore.Remove("TTT", "PrepPeriod")
         for Player in Server.ActivePlayers:
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "Winnerui")
+                                                       "DestroyUI", "broadcastui")
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "RoundOverui")
+                                                        "DestroyUI", "hudui")
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "PrepPeriodui")
-            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "CountDownui")
-            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "Innocentui")
-            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "Terroristui")
+                                                        "DestroyUI", "healthui")
             DataStore.Remove("TTT", "USER:" + Player.SteamID)
             Player.Kill()
             Player.basePlayer.Respawn()
         KillData.clear()
-        terroristdata.clear()
         PlayerLocData.clear()
         self.countdown = PluginSettings["CountDown"]
         self.matchlength = PluginSettings["MatchLength"]
         self.prepperiod = PluginSettings["PrepPeriodTime"] / 1000
-        self.resettime = PluginSettings["ResetTime"] / 1000
+        self.resettime = PluginSettings["ResetTime"]
         self.amountofterrorists = 0
         self.amountofinnocents = 0
         self.startgame()
@@ -653,10 +540,6 @@ class TroubleinTerroristTown:
             Plugin.CreateTimer("GuiHUD", 1000).Start()
         else:
             Plugin.GetTimer("GuiHUD").Start()
-        # Display GUI with Prep time instead of broadcast
-        #Server.BroadcastFrom(DataStore.Get("TTT", "SystemName"), DataStore.Get("TTT", "MSGPrepPeriod")
-                             #.Replace("%Time%", str(time.strftime("%M:%S", time.gmtime(DataStore.Get("TTT", "PrepPeriodTime") / 1000)))))
-        #Plugin.CreateTimer("PrepPeriod", int(DataStore.Get("TTT", "PrepPeriodTime"))).Start()
 
     def FreezePlayersCallback(self, timer):
         for Player in Server.ActivePlayers:
@@ -665,12 +548,39 @@ class TroubleinTerroristTown:
                 Player.basePlayer.ClientRPCPlayer(None, Player.basePlayer, "ForcePositionTo",
                                                   PlayerLocData[Player.SteamID])
                 Player.basePlayer.TransformChanged()
-                Player.MessageFrom(PluginSettings["SystemName"], "Wait until the countdown is finished!")
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                           "DestroyUI", "broadcastui")
+                string = json.encode(broadcast)
+                jsonUI = json.makepretty(string)
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                           "AddUI", jsonUI
+                                                           .Replace("[TEXT]", "Wait until the countdown is finished!"))
 
     def On_PlayerWakeUp(self, Player):
         if DataStore.Get("TTT", "On_PlayerWakeUp"):
             if not DataStore.Get("TTT", "In-Game:" + Player.SteamID):
-                Player.basePlayer.StartSpectating()        
+                Player.basePlayer.StartSpectating()
+        else:
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                    "DestroyUI", "healthui")
+            string = json.encode(health)
+            jsonUI = json.makepretty(string)
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
+                                                    jsonUI.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                    .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
+
+    def RemoveBroadcastCallback(self, timer):
+        timer.Kill()
+        for Player in Server.ActivePlayers:
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                   "DestroyUI", "broadcastui")
+
+    def BroadcastCallback(self, timer):
+        timer.Kill()
+        data = timer.Args
+        connection = data["Connection"]
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(connection), None,
+                                                   "DestroyUI", "broadcastui")
 
     def PlayerDisconnected(self, Player):
         if not DataStore.Get("TTT", "GAMEOVER"):
@@ -710,12 +620,13 @@ class TroubleinTerroristTown:
                 need = 1
             maax = need + 1
             self.amountofterrorists = need
-            randlist = random.sample(xrange(0, maax), need)
+            randlist = random.sample(xrange(1, maax), need)
             count = 0
             for Player in totalplayers:
                 count += 1
                 for x in randlist:
                     if count == x:
+                        Util.Log(Player.Name)
                         DataStore.Add("TTT", "USER:" + Player.SteamID, "Terrorist")
                         Player.MessageFrom("Terrorist", "You have been selected to be a: Terrorist")
                         Player.MessageFrom("Terrorist", "Kill players without the others knowing it was you!")
@@ -745,9 +656,36 @@ class TroubleinTerroristTown:
             for x in range(0, len(CombatEntityHurtEvent.DamageAmounts)):
                 CombatEntityHurtEvent.DamageAmounts[x] = 0
 
+    def On_PlayerWounded(self, Player):
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                   "DestroyUI", "healthui")
+        string = json.encode(health)
+        jsonUI = json.makepretty(string)
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
+                                                   jsonUI.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                   .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
+
+    def On_PlayerSyringeSelf(self, SyringeUseEvent):
+        Player = SyringeUseEvent.User
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                   "DestroyUI", "healthui")
+        string = json.encode(health)
+        jsonUI = json.makepretty(string)
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
+                                                   jsonUI.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                   .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
+
     def On_PlayerHurt(self, PlayerHurtEvent):
+        Player = PlayerHurtEvent.Victim
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                   "DestroyUI", "healthui")
+        string = json.encode(health)
+        jsonUI = json.makepretty(string)
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
+                                                   jsonUI.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                   .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
         try:
-            if PluginSettings["DisableKilling"]:
+            if DataStore.Get("TTT", "DisableKilling"):
                 for x in range(0, len(PlayerHurtEvent.DamageAmounts)):
                     PlayerHurtEvent.DamageAmounts[x] = 0
             else:
@@ -763,20 +701,19 @@ class TroubleinTerroristTown:
             return
 
     def On_PlayerDied(self, PlayerDeathEvent):
-        # Display kill feed in top right hand corner, Thats more GarrysMod style
-        # E.G: Attacker Name *Gun symbol* Victim Name
+        # Todo: Display kill feed in top right hand corner, Thats more GarrysMod style
+        # Todo: E.G: Attacker Name *Gun symbol* Victim Name
+        # Todo: Fully test this hook, Sometimes works.
         try:
             PlayerDeathEvent.dropLoot = False
             if DataStore.Get("TTT", "INGAME"):
                 Victim = PlayerDeathEvent.Victim
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
-                                                           "DestroyUI", "PrepPeriodui")
+                                                           "DestroyUI", "healthui")
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
-                                                           "DestroyUI", "CountDownui")
+                                                           "DestroyUI", "hudui")
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
-                                                           "DestroyUI", "Innocentui")
-                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
-                                                           "DestroyUI", "Terroristui")
+                                                           "DestroyUI", "healthui")
                 if PlayerDeathEvent.Attacker.IsPlayer():
                     Attacker = PlayerDeathEvent.Attacker.ToPlayer()
                     if self.findgroup(Victim) == "Terrorist":
