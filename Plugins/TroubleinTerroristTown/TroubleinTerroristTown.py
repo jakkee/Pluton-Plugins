@@ -4,7 +4,9 @@ __about__ = 'GameMode: Trouble in Terrorist Town'
 __version__ = '1.3Beta'
 
 import clr
-clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp")
+clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp", "UnityEngine")
+# from UnityEngine import Vector3
+# import Effect
 import CommunityEntity
 import Network
 import Pluton
@@ -21,14 +23,13 @@ except ImportError:
 try:
     import json
 except ImportError:
-    raise ImportError("Trouble in Terrorist Town: Can not find folder JSON in Libs folder [Pluton\Python\JSON] *DOWNLOAD: http://forum.pluton-team.org/resources/microjson.54/*")
+    raise ImportError("Trouble in Terrorist Town: Can not find JSON in Libs folder [Pluton\Python\Lib] *DOWNLOAD: http://forum.pluton-team.org/resources/microjson.54/*")
 
 rgbstringtemplate = re.compile(r'#[a-fA-F0-9]{6}$')
 KillData = {}
 PlayerLocData = {}
 PluginSettings = {}
-# TODO: HUD ui may need to be moved, Playing with graphics.hud false currently (Just testing, Might keep)
-hud = [
+HUDBAR = [
     {
         "name": "hudui",
         "parent": "Overlay",
@@ -95,7 +96,9 @@ hud = [
         ]
     }
 ]
-health = [
+string = json.encode(HUDBAR)
+hud = json.makepretty(string)
+HEALTHBAR = [
     {
         "name": "healthui",
         "parent": "Overlay",
@@ -145,7 +148,9 @@ health = [
         ]
     }
 ]
-broadcast = [
+string = json.encode(HEALTHBAR)
+health = json.makepretty(string)
+BROADCASTBAR = [
     {
         "name": "broadcastui",
         "parent": "Overlay",
@@ -180,7 +185,9 @@ broadcast = [
         ]
     }
 ]
-winner = [
+string = json.encode(BROADCASTBAR)
+broadcast = json.makepretty(string)
+WINNERBAR = [
     {
         "name": "winnerui",
         "parent": "Overlay",
@@ -215,7 +222,8 @@ winner = [
         ]
     }
 ]
-
+string = json.encode(WINNERBAR)
+winner = json.makepretty(string)
 # End of UI's
 
 
@@ -281,7 +289,7 @@ class TroubleinTerroristTown:
             ini.AddSetting("InnocentKit", "Belt1", "Custom SMG, 1")
             ini.AddSetting("InnocentKit", "Belt2", "Medical Syringe, 1")
             ini.AddSetting("InnocentKit", "Belt3", "Medical Syringe, 1")
-            ini.AddSetting("InnocentKit", "Belt4", "Cooked Wolf Meat, 1")
+            ini.AddSetting("InnocentKit", "Belt4", "Cooked Wolf Meat, 20")
             ini.AddSetting("InnocentKit", "Belt5", "Machete, 1")
             ini.AddSetting("InnocentKit", "Main0", "12 Gauge Buckshot, 64")
             ini.AddSetting("InnocentKit", "Main1", "12 Gauge Buckshot, 64")
@@ -298,7 +306,7 @@ class TroubleinTerroristTown:
             ini.AddSetting("TerroristKit", "Belt1", "Custom SMG, 1")
             ini.AddSetting("TerroristKit", "Belt2", "Medical Syringe, 1")
             ini.AddSetting("TerroristKit", "Belt3", "Medical Syringe, 1")
-            ini.AddSetting("TerroristKit", "Belt4", "Cooked Wolf Meat, 1")
+            ini.AddSetting("TerroristKit", "Belt4", "Cooked Wolf Meat, 20")
             ini.AddSetting("TerroristKit", "Belt5", "Bone Knife, 1")
             ini.AddSetting("TerroristKit", "Main0", "12 Gauge Buckshot, 64")
             ini.AddSetting("TerroristKit", "Main1", "12 Gauge Buckshot, 64")
@@ -388,10 +396,8 @@ class TroubleinTerroristTown:
                 for Player in Server.ActivePlayers:
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                                "DestroyUI", "hudui")
-                    string = json.encode(hud)
-                    jsonUI = json.makepretty(string)
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "AddUI", jsonUI.Replace("[INFOBOX]", PluginSettings["MSGAwaitingPlayers"])
+                                                               "AddUI", hud.Replace("[INFOBOX]", PluginSettings["MSGAwaitingPlayers"])
                                                                .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.prepperiod))))
                                                                .Replace("[COLOR]", "0.5 0.5 0.5 0.4"))
                 self.prepperiod -= 1
@@ -453,12 +459,12 @@ class TroubleinTerroristTown:
                         if Player.basePlayer.IsSleeping():
                             Player.basePlayer.EndSleeping()
                         else:
+                            # Todo: Count down sound?
+                            # Effect.server.Run("assets/bundled/prefabs/fx/gestures/guitarpluck.prefab", Player.Location, Player.Location.zero, None, False)
                             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                                        "DestroyUI", "hudui")
-                            string = json.encode(hud)
-                            jsonUI = json.makepretty(string)
                             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                       "AddUI", jsonUI.Replace("[INFOBOX]", PluginSettings["MSGCountDown"])
+                                                                       "AddUI", hud.Replace("[INFOBOX]", PluginSettings["MSGCountDown"])
                                                                        .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.countdown))))
                                                                        .Replace("[COLOR]", "0.5 0.5 0.5 0.4"))
                     else:
@@ -472,10 +478,8 @@ class TroubleinTerroristTown:
                                                                        "DestroyUI", "hudui")
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                                "DestroyUI", "broadcastui")
-                    string = json.encode(broadcast)
-                    jsonUI = json.makepretty(string)
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "AddUI", jsonUI
+                                                               "AddUI", broadcast
                                                                .Replace("[TEXT]", PluginSettings["MSGReminder"]
                                                                         .Replace("%Group%", self.findgroup(Player))))
                     if Player.basePlayer.IsSleeping():
@@ -486,6 +490,7 @@ class TroubleinTerroristTown:
                     Plugin.GetTimer("RemoveBroadcast").Kill()
                 Plugin.CreateTimer("RemoveBroadcast", 10000).Start()
                 # Todo: Change Server.Broadcast to broadcast UI
+                # Adding to Broadcast ui would remove the reminder ui, hmmm. Add a delay?
                 # Server.BroadcastFrom(PluginSettings["SystemName"], PluginSettings["MSGGameStarted"])
                 Plugin.GetTimer("FreezePlayers").Kill()
                 DataStore.Remove("TTT", "DisableKilling")
@@ -500,10 +505,8 @@ class TroubleinTerroristTown:
                             color = "1 0.08 0.08 0.5"
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                                    "DestroyUI", "hudui")
-                        string = json.encode(hud)
-                        jsonUI = json.makepretty(string)
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "AddUI", jsonUI.Replace("[INFOBOX]", self.findgroup(Player))
+                                                                   "AddUI", hud.Replace("[INFOBOX]", self.findgroup(Player))
                                                                    .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.matchlength))))
                                                                    .Replace("[COLOR]", color))
                     else:
@@ -512,17 +515,20 @@ class TroubleinTerroristTown:
             else:
                 if not DataStore.Get("TTT", "RoundOver"):
                     self.clearui()
-                    # Todo: Change Server.Broadcast to broadcast UI
-                    # Server.BroadcastFrom(PluginSettings["SystemName"], PluginSettings["MSGOutOfTime"])
+                    for Player in Server.ActivePlayers:
+                        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                                   "AddUI", broadcast
+                                                                   .Replace("[TEXT]", PluginSettings["MSGOutOfTime"]))
+                    if Plugin.GetTimer("RemoveBroadcast") is not None:
+                        Plugin.GetTimer("RemoveBroadcast").Kill()
+                    Plugin.CreateTimer("RemoveBroadcast", PluginSettings["ResetTime"] * 1000).Start()
                     self.endgame("Terrorist")
                 else:
                     for Player in Server.ActivePlayers:
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                                    "DestroyUI", "hudui")
-                        string = json.encode(hud)
-                        jsonUI = json.makepretty(string)
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "AddUI", jsonUI.Replace("[INFOBOX]", PluginSettings["MSGRoundOver"])
+                                                                   "AddUI", hud.Replace("[INFOBOX]", PluginSettings["MSGRoundOver"])
                                                                    .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.resettime))))
                                                                    .Replace("[COLOR]", "0.5 0.5 0.5 0.4"))
                     self.resettime -= 1
@@ -543,10 +549,8 @@ class TroubleinTerroristTown:
         for Player in Server.ActivePlayers:
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                        "DestroyUI", "winnerui")
-            string = json.encode(winner)
-            jsonUI = json.makepretty(string)
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "AddUI", jsonUI
+                                                       "AddUI", winner
                                                        .Replace("[TEXT]", PluginSettings["MSGWinner"].Replace("%Winner%", winner)))
         if Plugin.GetTimer("RemoveBroadcast") is not None:
             Plugin.GetTimer("RemoveBroadcast").Kill()
@@ -607,10 +611,8 @@ class TroubleinTerroristTown:
                 for timer in Plugin.GetParallelTimer("Broadcast"):
                     if Server.Players[timer.Args["PlayerID"]].SteamID == Player.SteamID:
                         timer.Kill()
-                string = json.encode(broadcast)
-                jsonUI = json.makepretty(string)
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                           "AddUI", jsonUI
+                                                           "AddUI", broadcast
                                                            .Replace("[TEXT]", "Wait until the countdown is finished!"))
                 data = Plugin.CreateDict()
                 data["PlayerID"] = Player.GameID
@@ -624,10 +626,8 @@ class TroubleinTerroristTown:
             else:
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                            "DestroyUI", "healthui")
-                string = json.encode(health)
-                jsonUI = json.makepretty(string)
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
-                                                           jsonUI.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                           health.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
                                                            .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
 
     def On_PlayerHealthChange(self, PlayerHealthChangeEvent):
@@ -635,10 +635,8 @@ class TroubleinTerroristTown:
         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
                                                    "DestroyUI", "healthui")
         if DataStore.Get("TTT", "In-Game:" + Player.SteamID):
-            string = json.encode(health)
-            jsonUI = json.makepretty(string)
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
-                                                       jsonUI.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                       health.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
                                                        .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
         else:
             return
@@ -765,6 +763,7 @@ class TroubleinTerroristTown:
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
                                                            "DestroyUI", "healthui")
                 if PlayerDeathEvent.Attacker.IsPlayer():
+                    # Todo: Sometimes fails at IsPlayer()
                     Attacker = PlayerDeathEvent.Attacker.ToPlayer()
                     if self.findgroup(Victim) == "Terrorist":
                         Server.BroadcastFrom(PluginSettings["SystemName"], Attacker.Name
