@@ -4,12 +4,13 @@ __about__ = 'GameMode: Trouble in Terrorist Town'
 __version__ = '1.3Beta'
 
 import clr
-clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp", "UnityEngine")
+clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp-firstpass", "Assembly-CSharp", "UnityEngine")
 # from UnityEngine import Vector3
 # import Effect
+import Pluton
+import Facepunch
 import CommunityEntity
 import Network
-import Pluton
 import sys
 import re
 path = Util.GetPublicFolder()
@@ -395,11 +396,11 @@ class TroubleinTerroristTown:
             if self.prepperiod >= 0:
                 for Player in Server.ActivePlayers:
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "DestroyUI", "hudui")
+                                                               "DestroyUI", Facepunch.ObjectList("hudui"))
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "AddUI", hud.Replace("[INFOBOX]", PluginSettings["MSGAwaitingPlayers"])
+                                                               "AddUI", Facepunch.ObjectList(hud.Replace("[INFOBOX]", PluginSettings["MSGAwaitingPlayers"])
                                                                .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.prepperiod))))
-                                                               .Replace("[COLOR]", "0.5 0.5 0.5 0.4"))
+                                                               .Replace("[COLOR]", "0.5 0.5 0.5 0.4")))
                 self.prepperiod -= 1
             elif len(Server.ActivePlayers) >= PluginSettings["MinPlayers"]:
                 if len(Server.ActivePlayers) == 0:
@@ -415,7 +416,7 @@ class TroubleinTerroristTown:
                     DataStore.Add("TTT", "CountDownPeriod", True)
                     for Player in Server.ActivePlayers:
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "DestroyUI", "hudui")
+                                                                   "DestroyUI", Facepunch.ObjectList("hudui"))
                         Player.Kill()
                         Player.basePlayer.Respawn()
                         Player.basePlayer.metabolism.calories.value = 1000
@@ -462,11 +463,11 @@ class TroubleinTerroristTown:
                             # Todo: Count down sound?
                             # Effect.server.Run("assets/bundled/prefabs/fx/gestures/guitarpluck.prefab", Player.Location, Player.Location.zero, None, False)
                             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                       "DestroyUI", "hudui")
+                                                                       "DestroyUI", Facepunch.ObjectList("hudui"))
                             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                       "AddUI", hud.Replace("[INFOBOX]", PluginSettings["MSGCountDown"])
+                                                                       "AddUI", Facepunch.ObjectList(hud.Replace("[INFOBOX]", PluginSettings["MSGCountDown"])
                                                                        .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.countdown))))
-                                                                       .Replace("[COLOR]", "0.5 0.5 0.5 0.4"))
+                                                                       .Replace("[COLOR]", "0.5 0.5 0.5 0.4")))
                     else:
                         continue
                 self.countdown -= 1
@@ -475,13 +476,13 @@ class TroubleinTerroristTown:
                 for Player in Server.ActivePlayers:
 
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                       "DestroyUI", "hudui")
+                                                                       "DestroyUI", Facepunch.ObjectList("hudui"))
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "DestroyUI", "broadcastui")
+                                                               "DestroyUI", Facepunch.ObjectList("broadcastui"))
                     CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                               "AddUI", broadcast
+                                                               "AddUI", Facepunch.ObjectList(broadcast
                                                                .Replace("[TEXT]", PluginSettings["MSGReminder"]
-                                                                        .Replace("%Group%", self.findgroup(Player))))
+                                                                        .Replace("%Group%", self.findgroup(Player)))))
                     if Player.basePlayer.IsSleeping():
                         Player.basePlayer.EndSleeping()
                     else:
@@ -490,7 +491,7 @@ class TroubleinTerroristTown:
                     Plugin.GetTimer("RemoveBroadcast").Kill()
                 Plugin.CreateTimer("RemoveBroadcast", 10000).Start()
                 # Todo: Change Server.Broadcast to broadcast UI
-                # Adding to Broadcast ui would remove the reminder ui, hmmm. Add a delay?
+                # Adding to Broadcast ui would remove the reminder ui, Add a delay?
                 # Server.BroadcastFrom(PluginSettings["SystemName"], PluginSettings["MSGGameStarted"])
                 Plugin.GetTimer("FreezePlayers").Kill()
                 DataStore.Remove("TTT", "DisableKilling")
@@ -504,11 +505,11 @@ class TroubleinTerroristTown:
                         if group == "Terrorist":
                             color = "1 0.08 0.08 0.5"
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "DestroyUI", "hudui")
+                                                                   "DestroyUI", Facepunch.ObjectList("hudui"))
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "AddUI", hud.Replace("[INFOBOX]", self.findgroup(Player))
+                                                                   "AddUI", Facepunch.ObjectList(hud.Replace("[INFOBOX]", self.findgroup(Player))
                                                                    .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.matchlength))))
-                                                                   .Replace("[COLOR]", color))
+                                                                   .Replace("[COLOR]", color)))
                     else:
                         continue
                 self.matchlength -= 1
@@ -517,8 +518,8 @@ class TroubleinTerroristTown:
                     self.clearui()
                     for Player in Server.ActivePlayers:
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "AddUI", broadcast
-                                                                   .Replace("[TEXT]", PluginSettings["MSGOutOfTime"]))
+                                                                   "AddUI", Facepunch.ObjectList(broadcast
+                                                                   .Replace("[TEXT]", PluginSettings["MSGOutOfTime"])))
                     if Plugin.GetTimer("RemoveBroadcast") is not None:
                         Plugin.GetTimer("RemoveBroadcast").Kill()
                     Plugin.CreateTimer("RemoveBroadcast", PluginSettings["ResetTime"] * 1000).Start()
@@ -526,32 +527,32 @@ class TroubleinTerroristTown:
                 else:
                     for Player in Server.ActivePlayers:
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "DestroyUI", "hudui")
+                                                                   "DestroyUI", Facepunch.ObjectList("hudui"))
                         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                                   "AddUI", hud.Replace("[INFOBOX]", PluginSettings["MSGRoundOver"])
+                                                                   "AddUI", Facepunch.ObjectList(hud.Replace("[INFOBOX]", PluginSettings["MSGRoundOver"])
                                                                    .Replace("[TIME]", str(time.strftime("%M:%S", time.gmtime(self.resettime))))
-                                                                   .Replace("[COLOR]", "0.5 0.5 0.5 0.4"))
+                                                                   .Replace("[COLOR]", "0.5 0.5 0.5 0.4")))
                     self.resettime -= 1
 
     def clearui(self):
         for Player in Server.ActivePlayers:
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "winnerui")
+                                                       "DestroyUI", Facepunch.ObjectList("winnerui"))
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "healthui")
+                                                       "DestroyUI", Facepunch.ObjectList("healthui"))
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "hudui")
+                                                       "DestroyUI", Facepunch.ObjectList("hudui"))
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "healthui")
+                                                       "DestroyUI", Facepunch.ObjectList("healthui"))
 
     def endgame(self, winner):
         DataStore.Add("TTT", "RoundOver", True)
         for Player in Server.ActivePlayers:
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "winnerui")
+                                                       "DestroyUI", Facepunch.ObjectList("winnerui"))
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "AddUI", winner
-                                                       .Replace("[TEXT]", PluginSettings["MSGWinner"].Replace("%Winner%", winner)))
+                                                       "AddUI", Facepunch.ObjectList(winner
+                                                       .Replace("[TEXT]", PluginSettings["MSGWinner"].Replace("%Winner%", winner))))
         if Plugin.GetTimer("RemoveBroadcast") is not None:
             Plugin.GetTimer("RemoveBroadcast").Kill()
         Plugin.CreateTimer("RemoveBroadcast", 8000).Start()
@@ -568,13 +569,13 @@ class TroubleinTerroristTown:
         DataStore.Remove("TTT", "PrepPeriod")
         for Player in Server.ActivePlayers:
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "winnerui")
+                                                       "DestroyUI", Facepunch.ObjectList("winnerui"))
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                       "DestroyUI", "broadcastui")
+                                                       "DestroyUI", Facepunch.ObjectList("broadcastui"))
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                        "DestroyUI", "hudui")
+                                                        "DestroyUI", Facepunch.ObjectList("hudui"))
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                        "DestroyUI", "healthui")
+                                                        "DestroyUI", Facepunch.ObjectList("healthui"))
             DataStore.Remove("TTT", "USER:" + Player.SteamID)
             Player.Kill()
             Player.basePlayer.Respawn()
@@ -607,13 +608,13 @@ class TroubleinTerroristTown:
                                                   PlayerLocData[Player.SteamID])
                 Player.basePlayer.TransformChanged()
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                           "DestroyUI", "broadcastui")
+                                                           "DestroyUI", Facepunch.ObjectList("broadcastui"))
                 for timer in Plugin.GetParallelTimer("Broadcast"):
                     if Server.Players[timer.Args["PlayerID"]].SteamID == Player.SteamID:
                         timer.Kill()
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                           "AddUI", broadcast
-                                                           .Replace("[TEXT]", "Wait until the countdown is finished!"))
+                                                           "AddUI", Facepunch.ObjectList(broadcast
+                                                           .Replace("[TEXT]", "Wait until the countdown is finished!")))
                 data = Plugin.CreateDict()
                 data["PlayerID"] = Player.GameID
                 Plugin.CreateParallelTimer("Broadcast", 1300, data).Start()
@@ -625,19 +626,19 @@ class TroubleinTerroristTown:
                 return
             else:
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                           "DestroyUI", "healthui")
+                                                           "DestroyUI", Facepunch.ObjectList("healthui"))
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
-                                                           health.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
-                                                           .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
+                                                           Facepunch.ObjectList(health.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                           .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100))))
 
     def On_PlayerHealthChange(self, PlayerHealthChangeEvent):
-        Player = PlayerHealthChangeEvent
+        Player = PlayerHealthChangeEvent.Player
         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                   "DestroyUI", "healthui")
+                                                   "DestroyUI", Facepunch.ObjectList("healthui"))
         if DataStore.Get("TTT", "In-Game:" + Player.SteamID):
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI",
-                                                       health.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
-                                                       .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100)))
+                                                       Facepunch.ObjectList(health.Replace("[HEALTH]", str(round(Player.Health, 0)).split(".")[0])
+                                                       .Replace("[INTHEALTH]", str(round(Player.Health, 2)/100))))
         else:
             return
 
@@ -645,7 +646,7 @@ class TroubleinTerroristTown:
         timer.Kill()
         for Player in Server.ActivePlayers:
             CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                   "DestroyUI", "broadcastui")
+                                                   "DestroyUI", Facepunch.ObjectList("broadcastui"))
 
     def BroadcastCallback(self, timer):
         timer.Kill()
@@ -653,7 +654,7 @@ class TroubleinTerroristTown:
         playerID = data["PlayerID"]
         Player = Server.Players[playerID]
         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
-                                                   "DestroyUI", "broadcastui")
+                                                   "DestroyUI", Facepunch.ObjectList("broadcastui"))
 
     def PlayerDisconnected(self, Player):
         if not DataStore.Get("TTT", "GAMEOVER"):
@@ -691,20 +692,27 @@ class TroubleinTerroristTown:
             need = int(need)
             if need == 0:
                 need = 1
-            maax = need + 1
+            maax = len(totalplayers) + 1
             self.amountofterrorists = need
             randlist = random.sample(xrange(1, maax), need)
             count = 0
+            # Todo: Need to make this truly random, Most of the time just picks the first player.
+            # Todo: Break the inner loop without breaking both loops
             for Player in totalplayers:
+                Util.Log("SetTerrorist: Started loop")
                 count += 1
                 for x in randlist:
                     if count == x:
+                        Util.Log("SetTerrorist: Found a player to be Terrorist")
                         DataStore.Add("TTT", "USER:" + Player.SteamID, "Terrorist")
                         # Player.MessageFrom("Terrorist", "You have been selected to be a: Terrorist")
                         # Player.MessageFrom("Terrorist", "Kill players without the others knowing it was you!")
-                        continue
+                    else:
+                        Util.Log("SetTerrorist: Didn't find a player for Terrorist, trying to looping again")
+                        break
                 else:
-                    continue
+                    Util.Log("SetTerrorist: Completed looping all random numbers, Terrorists have been selected!")
+                    break
         #except Exception, error:
             #Server.Broadcast("Error setting terrorists, Reload the server!")
             #Plugin.Log("ErrorLog", "setTerrorist: " + str(error))
@@ -757,11 +765,11 @@ class TroubleinTerroristTown:
             if DataStore.Get("TTT", "INGAME"):
                 Victim = PlayerDeathEvent.Victim
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
-                                                           "DestroyUI", "healthui")
+                                                           "DestroyUI", Facepunch.ObjectList("healthui"))
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
-                                                           "DestroyUI", "hudui")
+                                                           "DestroyUI", Facepunch.ObjectList("hudui"))
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
-                                                           "DestroyUI", "healthui")
+                                                           "DestroyUI", Facepunch.ObjectList("healthui"))
                 if PlayerDeathEvent.Attacker.IsPlayer():
                     # Todo: Sometimes fails at IsPlayer()
                     Attacker = PlayerDeathEvent.Attacker.ToPlayer()
