@@ -33,7 +33,7 @@ PluginSettings = {}
 HUDBAR = [
     {
         "name": "hudui",
-        "parent": "Overlay",
+        #"parent": "Overlay",
         "components":
         [
             {
@@ -102,7 +102,7 @@ hud = json.makepretty(string)
 HEALTHBAR = [
     {
         "name": "healthui",
-        "parent": "Overlay",
+        #"parent": "Overlay",
         "components":
         [
             {
@@ -154,7 +154,7 @@ health = json.makepretty(string)
 BROADCASTBAR = [
     {
         "name": "broadcastui",
-        "parent": "Overlay",
+        #"parent": "Overlay",
         "components":
         [
             {
@@ -191,7 +191,7 @@ broadcast = json.makepretty(string)
 WINNERBAR = [
     {
         "name": "winnerui",
-        "parent": "Overlay",
+        #"parent": "Overlay",
         "components":
         [
             {
@@ -699,7 +699,7 @@ class TroubleinTerroristTown:
             # Todo: Need to make this truly random, Most of the time just picks the first player.
             # Todo: Break the inner loop without breaking both loops
             for Player in totalplayers:
-                Util.Log("SetTerrorist: Started loop")
+                #Util.Log("SetTerrorist: Started loop")
                 count += 1
                 for x in randlist:
                     if count == x:
@@ -708,10 +708,10 @@ class TroubleinTerroristTown:
                         # Player.MessageFrom("Terrorist", "You have been selected to be a: Terrorist")
                         # Player.MessageFrom("Terrorist", "Kill players without the others knowing it was you!")
                     else:
-                        Util.Log("SetTerrorist: Didn't find a player for Terrorist, trying to looping again")
+                        #Util.Log("SetTerrorist: Didn't find a player for Terrorist, trying to looping again")
                         break
                 else:
-                    Util.Log("SetTerrorist: Completed looping all random numbers, Terrorists have been selected!")
+                    #Util.Log("SetTerrorist: Completed looping all random numbers, Terrorists have been selected!")
                     break
         #except Exception, error:
             #Server.Broadcast("Error setting terrorists, Reload the server!")
@@ -771,7 +771,7 @@ class TroubleinTerroristTown:
                 CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Victim.basePlayer.net.connection), None,
                                                            "DestroyUI", Facepunch.ObjectList("healthui"))
                 if PlayerDeathEvent.Attacker.IsPlayer():
-                    # Todo: Sometimes fails at IsPlayer()
+                    # Todo: Sometimes fails at IsPlayer(), NoneType has no .IsPlayer()
                     Attacker = PlayerDeathEvent.Attacker.ToPlayer()
                     if self.findgroup(Victim) == "Terrorist":
                         Server.BroadcastFrom(PluginSettings["SystemName"], Attacker.Name
