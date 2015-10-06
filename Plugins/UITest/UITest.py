@@ -1,46 +1,86 @@
 import clr
-clr.AddReferenceByPartialName("Pluton")
+clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp-firstpass", "Assembly-CSharp")
+import Facepunch
+import CommunityEntity
+import Network
 import Pluton
+import sys
+path = Util.GetPublicFolder()
+sys.path.append(path + "\\Python\\Lib\\")
+try:
+    import json
+except ImportError:
+    raise ImportError("UI TEST: Can not find JSON in Libs folder [Pluton\Python\Libs\] *DOWNLOAD: http://forum.pluton-team.org/resources/microjson.54/*")
+broadcastgui = [
+    {
+        "name": "broadcastui",
+        #"parent": "Overlay",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.1 0.1 0.1 0.3",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.3 0.95",
+                "anchormax": "0.7 0.995"
+            }
+        ]
+    },
+    {
+        "parent": "broadcastui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[TEXT]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.005",
+                "anchormax": "0.995 0.995"
+            }
+        ]
+    }
+]
+string = json.encode(broadcastgui)
+broadcast = json.makepretty(string)
 
 
-class UITest:
-    def On_PluginInit(self):
-        Commands.Register("makeui")\
-            .setCallback("makeui")\
-            .setDescription("Creates a test UI")\
-            .setUsage("/makeui")
-        
-    def makeui(self, args, Player):
-        commui = Pluton.PlutonUIEntity(Player.basePlayer.net.connection)
-        testpanel7766 = commui.AddPanel("TestPanel7766", "Overlay")
-        testpanel7766.AddComponent<Pluton.PlutonUI.NeedsCursor>()
-        testpanel7766.AddComponent(Pluton.PlutonUI.RectTransform(
-            anchormin = "0 0",
-            anchormax = "1 1"))
-        testpanel7766.AddComponent(Pluton.PlutonUI.RawImage(
-            color = "1.0 1.0 1.0 1.0",
-            url = "http://files.facepunch.com/garry/2015/June/03/2015-06-03_12-19-17.jpg"))
-        nonamepanel = commui.AddPanel(None, "TestPanel7766")
-        nonamepanel.AddComponent(Pluton.PlutonUI.Text(
-            text = "Do you want to press a button?",
-            fontSize = 32,
-            align = "MiddleCenter"))
-        nonamepanel.AddComponent(Pluton.PlutonUI.RectTransform(
-            anchormin = "0 0.5",
-            anchormax = "1 0.9"))
-        Button88 = commui.AddPanel("Button88", "TestPanel7766")
-        Button88.AddComponent(Pluton.PlutonUI.Button(
-            close = "TestPanel7766",
-            command = "status",
-            color = "0.9 0.8 0.3 0.8",
-            imagetype = "Tiled"))
-        Button88.AddComponent(Pluton.PlutonUI.RectTransform(
-            anchormin = "0.3 0.15",
-            anchormax = "0.7 0.2"))
-        nn2 = commui.AddPanel(None, "Button88")
-        nn2.AddComponent(Pluton.PlutonUI.Text(
-            text = "YES",
-            fontSize = 20,
-            align = "MiddleCenter"))
-        commui.CreateUI()
-        
+class UITEST:
+    def On_Command(self, CommandEvent):
+        Player = CommandEvent.User
+        cmd = CommandEvent.Cmd
+        args = CommandEvent.Args
+        if cmd == "show":
+            if Player.Admin:
+                if len(args) == 0:
+                    Player.Message("Usage: /show <insert your message here>")
+                else:
+                    timer = Plugin.GetTimer("RemoveBroadcast")
+                    if timer is not None:
+                        timer.Kill()
+                    self.SetBroadcast(str.Join(" ", args))
+                    Plugin.CreateTimer("RemoveBroadcast", 8000).Start()
+            else:
+                Player.MessageFrom("Error", "You do not have permission to use this command!")
+        elif cmd == "hide":
+            if Player.Admin:
+                for p in Server.ActivePlayers:
+                    CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(p.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("broadcastui"))
+                Player.Message("UI's Removed")
+            else:
+                Player.MessageFrom("Error", "You do not have permission to use this command!")
+
+    def SetBroadcast(self, args):
+        for Player in Server.ActivePlayers:
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", Facepunch.ObjectList(broadcast.Replace("[TEXT]", args)))
+
+    def RemoveBroadcastCallback(self, timer):
+        timer.Kill()
+        for Player in Server.ActivePlayers:
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None,
+                                                   "DestroyUI", Facepunch.ObjectList("broadcastui"))
