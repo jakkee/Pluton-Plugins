@@ -4,8 +4,135 @@ __about__ = 'Get extra resources'
 __version__ = '1.0'
 
 import clr
-clr.AddReferenceByPartialName("Pluton")
+clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp-firstpass", "Assembly-CSharp")
 import Pluton
+import Facepunch
+import CommunityEntity
+import Network
+import sys
+import re
+path = Util.GetPublicFolder()
+sys.path.append(path + "\\Python\\Lib\\")
+try:
+    import json
+except ImportError:
+    raise ImportError(__title__ + ": Can not find JSON in Libs folder [Pluton\Python\Lib] DOWNLOAD: http://forum.pluton-team.org/resources/microjson.54/")
+level = [
+    {
+        "name": "levelui",
+        #"parent": "Overlay",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.1 0.1 0.1 0.4",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.7 0.5",
+                "anchormax": "0.995 0.85"
+            }
+        ]
+    },
+    {
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.4 0.4 0.4 0.3",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.665",
+                "anchormax": "0.99 0.995"
+            }
+        ]
+    },
+    {
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[WCStats]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.665",
+                "anchormax": "0.99 0.995"
+            }
+        ]
+    },
+    {
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.4 0.4 0.4 0.3",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.33",
+                "anchormax": "0.99 0.66"
+            }
+        ]
+    },
+    {
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[MININGStats]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.33",
+                "anchormax": "0.99 0.66"
+            }
+        ]
+    },
+    {
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.4 0.4 0.4 0.3",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.005",
+                "anchormax": "0.99 0.325"
+            }
+        ]
+    },
+    {
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "[SKININGStats]",
+                "fontSize": 20,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.005 0.005",
+                "anchormax": "0.99 0.325"
+            }
+        ]
+    },
+]
+string = json.encode(level)
+levels = json.makepretty(string)
 
 
 class LevelSystem:
@@ -26,13 +153,13 @@ class LevelSystem:
             DataStore.Add("LevelSystem", "M", int(ini.GetSetting("Settings", "Mining level cap")))
             DataStore.Add("LevelSystem", "W", int(ini.GetSetting("Settings", "WoodCutting level cap")))
             DataStore.Add("LevelSystem", "S", int(ini.GetSetting("Settings", "Skinning level cap")))
-            if not ini.GetSetting("Settings", "AutoSave data interval") == "-1":
-                Plugin.CreateTimer("SaveData", int(ini.GetSetting("Settings", "AutoSave data interval")) * 1000)
-        except:
-            Util.Log("----------------------------------------------------------")
-            Util.Log("LevelSystem: Failed to convert String to a number!")
-            Util.Log("LevelSystem: String was not a number, Check your settings!")
-            Util.Log("----------------------------------------------------------")
+            if int(ini.GetSetting("Settings", "AutoSave data interval")) >= 0:
+                Plugin.CreateTimer("SaveData", int(ini.GetSetting("Settings", "AutoSave data interval")) * 1000).Start()
+        except Exception, error:
+            Util.Log(__title__ + ": There is an error in your settings file!")
+            Util.Log(__title__ + ": " + str(error))
+        for Player in Server.ActivePlayers:
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("levelui"))
 
     def SaveDataCallback(self, timer):
         try:
@@ -45,20 +172,20 @@ class LevelSystem:
         except:
             Util.Log("LevelSystem: Error in AutoSaving players data!")
 
-    def On_Gather(self, GatherEvent):
-        Server.Broadcast(str(int(GatherEvent.ResourceDispenser.gatherType)))
+    def On_PlayerGathering(self, GatherEvent):
         if int(GatherEvent.ResourceDispenser.gatherType) == 0:
-            self.amounthandler(GatherEvent.Gatherer, GatherEvent.Amount, "W", "WEXP")
+            self.amounthandler(GatherEvent.ItemAmount, GatherEvent.Resource, GatherEvent.Gatherer, GatherEvent.Amount, "W", "WEXP")
         elif int(GatherEvent.ResourceDispenser.gatherType) == 1:
-            self.mining(GatherEvent.Gatherer, GatherEvent.Amount, "M", "MEXP")
+            self.amounthandler(GatherEvent.ItemAmount, GatherEvent.Resource, GatherEvent.Gatherer, GatherEvent.Amount, "M", "MEXP")
         elif int(GatherEvent.ResourceDispenser.gatherType) == 2:
-            self.skinning(GatherEvent.Gatherer, GatherEvent.Amount, "S", "SEXP")
+            self.amounthandler(GatherEvent.ItemAmount, GatherEvent.Resource, GatherEvent.Gatherer, GatherEvent.Amount, "S", "SEXP")
 
-    def amounthandler(self, Player, amount, skill, skillexp):
+    def amounthandler(self, itemamount, item, Player, amount, skill, skillexp):
         calc = DataStore.Get("PlayerData", Player.SteamID + skill) * 0.20
-        if not calc == 0:
-            Player.Inventory.Add(GatherEvent.Resource.Name, amount * calc)
-        thingy = DataStore.Get("PlayerData", Player.SteamID + skillexp) + int(DataStore.Add("LevelSystem", "EXPHIT"))
+        giveamount = amount * calc
+        if giveamount >= 1:
+            Player.Inventory.Add(itemamount.itemid, giveamount)
+        thingy = DataStore.Get("PlayerData", Player.SteamID + skillexp) + int(DataStore.Get("LevelSystem", "EXPHIT"))
         DataStore.Add("PlayerData", Player.SteamID + skillexp, thingy) 
         self.LevelHandler(Player, skill, skillexp)
 
@@ -66,57 +193,79 @@ class LevelSystem:
         need = self.expcalc(Player.SteamID, skillexp)
         if not need == 0:
             if DataStore.Get("PlayerData", Player.SteamID + skillexp) >= need:
-                num = DataStore.Get("PlayerData", Player.SteamID + skillexp)
-                DataStore.Add("PlayerData", Player.SteamID + skillexp, num - need)
-                thing = DataStore.Get("PlayerData", Player.SteamID + skill) + 1
-                DataStore.Add("PlayerData", Player.SteamID + skill, thing)
-                Player.Message("You have gained a level!")
+                exp = DataStore.Get("PlayerData", Player.SteamID + skillexp)
+                DataStore.Add("PlayerData", Player.SteamID + skillexp, exp - need)
+                level = DataStore.Get("PlayerData", Player.SteamID + skill) + 1
+                DataStore.Add("PlayerData", Player.SteamID + skill, level)
+                Player.Message("You have gained a new level!")
+                self.ShowStats(Player)
             else:
                 return
         else:
             return
 
     def expcalc(self, steamID, skill):
-        level = DataStore.Get("PlayerData", steamID + skill[:-3])
-        level = int(level)
-        maxlevel = DataStore.Get("LevelSystem", skill[:-3])
-        maxlevel = int(maxlevel) - 1
-        if level <= maxlevel:
-            calc = level * 1.8
-            if calc == 0:
-                calc = 1
-            need = 15 * calc
-            return need
-        else:
+        try:
+            level = DataStore.Get("PlayerData", steamID + skill[:-3])
+            level = int(level)
+            maxlevel = DataStore.Get("LevelSystem", skill[:-3])
+            maxlevel = int(maxlevel) - 1
+            if level <= maxlevel:
+                calc = level * 1.8
+                if calc == 0:
+                    calc = 1
+                need = 15 * calc
+                return need
+            else:
+                return "MaxLevel"
+        except:
             return 0
-    
+
+    def ShowLevelUICallback(self, timer):
+        try:
+            timer.Kill()
+            data = timer.Args
+            playerID = data["PlayerID"]
+            Player = Server.Players[playerID]
+            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("levelui"))
+        except:
+            pass
+
+    def ShowStats(self, Player):
+        for timer in Plugin.GetParallelTimer("ShowLevelUI"):
+            if Server.Players[timer.Args["PlayerID"]].SteamID == Player.SteamID:
+                timer.Kill()
+        data = Plugin.CreateDict()
+        data["PlayerID"] = Player.GameID
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("levelui"))
+        wexp = str(self.expcalc(Player.SteamID, "WEXP"))
+        if wexp == "MaxLevel":
+            WStats = ("Woodcutting Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "W")) + " [Exp: Max Level Reached]")
+        else:
+            WStats = ("Woodcutting Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "W")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "WEXP")) + "/" + wexp + "]")
+        mexp = str(self.expcalc(Player.SteamID, "MEXP"))
+        if mexp == "MaxLevel":
+            MStats = ("Mining Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "M")) + " [Exp: Max level Reached]")
+        else:
+            MStats = ("Mining Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "M")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "MEXP")) + "/" + mexp + "]")
+        sexp = str(self.expcalc(Player.SteamID, "SEXP"))
+        if sexp == "MaxLevel":
+            SStats = ("Skinning Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "S")) + " [Exp: Max level Reached]")
+        else:
+            SStats = ("Skinning Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "S")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "SEXP")) + "/" + sexp + "]")
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", Facepunch.ObjectList(levels.Replace("[WCStats]", WStats).Replace("[MININGStats]", MStats).Replace("[SKININGStats]", SStats)))
+        Plugin.CreateParallelTimer("ShowLevelUI", 10000, data).Start()
+
     def stats(self, args, Player):
         if len(args) == 0:
-            wexp = str(self.expcalc(Player.SteamID, "WEXP"))
-            if wexp == "0":
-                Player.MessageFrom("WoodCutting", "Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "W")) + " [Exp: Max Level Reached]")
-            else:
-                Player.MessageFrom("WoodCutting", "Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "W")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "WEXP")) + "/" + wexp + "]")
-            mexp = str(self.expcalc(Player.SteamID, "MEXP"))
-            if mexp == "0":
-                Player.MessageFrom("Mining", "Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "M")) + " [Exp: Max level Reached]")
-            else:
-                Player.MessageFrom("Mining", "Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "M")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "MEXP")) + "/" + mexp + "]")
-            sexp = str(self.expcalc(Player.SteamID, "SEXP"))
-            if sexp == "0":
-                Player.MessageFrom("Skinning", "Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "S")) + " [Exp: Max level Reached]")
-            else:
-                Player.MessageFrom("Skinning", "Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "S")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "SEXP")) + "/" + sexp + "]")
             if Player.Owner or Player.Admin or Player.Moderator:
-                Player.Message("--------------------------------------------------")
-                Player.Message('Usage: /level set ["Players Name"] [skill] [Level]')
-                Player.Message('Example: /level set "360 Pro Noob" m 33')
-                Player.Message('Skills are: W=WoodCutting, M=Mining & S=Skinning')
-                Player.Message("--------------------------------------------------")
+                Player.Message('/level set ["Players Name"] [skill] [Level]')
+                Player.Message('/level wipe - Clears all data!')
+            self.ShowStats(Player)
         else:
             if Player.Owner or Player.Admin or Player.Moderator:
-                if len(args) == 4:
-                    if args[0] == "set":
+                if args[0] == "set":
+                    if len(args) == 4:
                         name = self.CheckV(Player, args[1])
                         if name is not None:
                             skill = args[2].upper()
@@ -129,24 +278,53 @@ class LevelSystem:
                         Player.Message('Usage: /level set ["Players Name"] [skill] [Level]')
                         Player.Message('Example: /level set "360 Pro Noob" m 33')
                         Player.Message('Skills are: W=WoodCutting, M=Mining & S=Skinning')
+                elif args[0] == "wipe":
+                    if Plugin.IniExists("PlayerData"):
+                        Server.Broadcast("Wiping levels systems data..")
+                        try:
+                            data = Plugin.GetIni("PlayerData")
+                            DataStore.Flush("PlayerData")
+                            for offlineplayer in Server.OfflinePlayers.Values:
+                                data.DeleteSection(offlineplayer.SteamID)
+                            for pl in Server.ActivePlayers:
+                                data.DeleteSection(pl.SteamID)
+                                DataStore.Add("PlayerData", Player.SteamID + "WEXP", 0)
+                                DataStore.Add("PlayerData", Player.SteamID + "SEXP", 0)
+                                DataStore.Add("PlayerData", Player.SteamID + "MEXP", 0)
+                                DataStore.Add("PlayerData", Player.SteamID + "W", 0)
+                                DataStore.Add("PlayerData", Player.SteamID + "M", 0)
+                                DataStore.Add("PlayerData", Player.SteamID + "S", 0)
+                            data.Save()
+                            Server.Broadcast("Completed!")
+                        except Exception, error:
+                            Player.Message("Failed: " + str(error))
+                    else:
+                        Player.Message("Nothing to delete!")
                 else:
-                    Player.Message('Usage: /level set ["Players Name"] [skill] [Level]')
-                    Player.Message('Example: /level set "360 Pro Noob" m 33')
-                    Player.Message('Skills are: W=WoodCutting, M=Mining & S=Skinning')
+                    Player.Message('/level set ["Players Name"] [skill] [Level]')
+                    Player.Message('/level wipe - Clears all data!')
             else:
                 Player.Message("You do not have permission to use this command!")         
 
     def On_PlayerConnected(self, Player):
         data = Plugin.GetIni("PlayerData")
-        if data.ContainsSetting(Player.SteamID, "WoodCutting"):
-            self.getstats(Player.SteamID)
-        else:
-            DataStore.Add("PlayerData", Player.SteamID + "W", int(0))
-            DataStore.Add("PlayerData", Player.SteamID + "WEXP", int(0))
-            DataStore.Add("PlayerData", Player.SteamID + "M", int(0))
-            DataStore.Add("PlayerData", Player.SteamID + "MEXP", int(0))
-            DataStore.Add("PlayerData", Player.SteamID + "S", int(0))
-            DataStore.Add("PlayerData", Player.SteamID + "SEXP", int(0))
+        try:
+            if data.ContainsSetting(Player.SteamID, "WoodCutting"):
+                self.getstats(Player.SteamID)
+            else:
+                DataStore.Add("PlayerData", Player.SteamID + "W", 0)
+                DataStore.Add("PlayerData", Player.SteamID + "WEXP", 0)
+                DataStore.Add("PlayerData", Player.SteamID + "M", 0)
+                DataStore.Add("PlayerData", Player.SteamID + "MEXP", 0)
+                DataStore.Add("PlayerData", Player.SteamID + "S", 0)
+                DataStore.Add("PlayerData", Player.SteamID + "SEXP", 0)
+        except:
+            DataStore.Add("PlayerData", Player.SteamID + "W", 0)
+            DataStore.Add("PlayerData", Player.SteamID + "WEXP", 0)
+            DataStore.Add("PlayerData", Player.SteamID + "M", 0)
+            DataStore.Add("PlayerData", Player.SteamID + "MEXP", 0)
+            DataStore.Add("PlayerData", Player.SteamID + "S", 0)
+            DataStore.Add("PlayerData", Player.SteamID + "SEXP", 0)
 
     def On_PlayerDisconnected(self, Player):
         self.dumpstats(Player.SteamID)
