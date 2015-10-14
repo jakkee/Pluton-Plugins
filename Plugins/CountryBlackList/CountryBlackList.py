@@ -6,13 +6,9 @@ __version__ = '1.1.1'
 import clr
 clr.AddReferenceByPartialName("Pluton")
 import Pluton
-import System
 
 
-class CountryBlackList:
-
-    GeoIP = None
-    
+class CountryBlackList:    
     def On_PluginInit(self):
         if Plugin.GetPlugin("GeoIP") is None:
             raise ImportError("Failed to reference the GeoIP.dll, Download from: http://forum.pluton-team.org/threads/geoip.437/")
@@ -37,9 +33,6 @@ class CountryBlackList:
         DataStore.Add("CountryBlackList", "PDM", ini.GetSetting("Messages", "PlayerDisconnectMessage"))
         DataStore.Add("CountryBlackList", "DM", ini.GetSetting("Messages", "ServerDisconnectMessage"))
         DataStore.Add("CountryBlackList", "UL", ini.GetSetting("Messages", "UnknownLocation"))
-        countrycode = Plugin.GetPlugin("GeoIP").Engine.GetDataOfIP("123.2.112.41").CountryShort
-        Util.Log(countrycode)
-        #
 
     def find(self, blacklist, CountryCode):
         try:
@@ -55,28 +48,25 @@ class CountryBlackList:
             return False
 
     def On_PlayerConnected(self, Player):
-        #try:
-        countrycode = Plugin.GetPlugin("GeoIP").Engine.GetDataOfIP("123.2.112.41").CountryShort
-        Util.Log(countrycode)
-        blacklist = DataStore.Get("CountryBlackList", "BL")
-        if self.find(blacklist, countrycode):
-            playerdisconnectMSG = DataStore.Get("CountryBlackList", "PDM")
-            if DataStore.Get("CountryBlackList", "SDM") == "true":
-                msg = DataStore.Get("CountryBlackList", "DM")
-                msg = msg.Replace("%PLAYER%", Player.Name)
-                msg = msg.Replace("%COUNTRY%", IPData.Country)
-                Server.Broadcast(msg)
-            Player.Kick(playerdisconnectMSG + " [" + countrycode + "]")
-        else:
+        try:
+            data = Plugin.GetPlugin("GeoIP").Engine.GetDataOfIP(Player.IP.split(":")[0])
+            if self.find(DataStore.Get("CountryBlackList", "BL"), data.CountryShort):
+                if DataStore.Get("CountryBlackList", "SDM") == "true":
+                    msg = DataStore.Get("CountryBlackList", "DM")
+                    msg = msg.Replace("%PLAYER%", Player.Name)
+                    msg = msg.Replace("%COUNTRY%", data.Country)
+                    Server.Broadcast(msg)
+                Player.Kick(DataStore.Get("CountryBlackList", "PDM") + " [" + data.Country + "]")
+            else:
+                if DataStore.Get("CountryBlackList", "SAM") == "true":
+                    msg = DataStore.Get("CountryBlackList", "JM")
+                    msg = msg.Replace("%PLAYER%", Player.Name)
+                    msg = msg.Replace("%COUNTRY%", data.Country)
+                    Server.Broadcast(msg)
+        except Exception, error:
+            Util.Log("CountryBlackList: " + error[0])
             if DataStore.Get("CountryBlackList", "SAM") == "true":
                 msg = DataStore.Get("CountryBlackList", "JM")
                 msg = msg.Replace("%PLAYER%", Player.Name)
-                msg = msg.Replace("%COUNTRY%", IPData.Country)
+                msg = msg.Replace("%COUNTRY%", DataStore.Get("CountryBlackList", "UL"))
                 Server.Broadcast(msg)
-        #except Exception, error:
-            #Util.Log(error[0])
-            #if DataStore.Get("CountryBlackList", "SAM") == "true":
-                #msg = DataStore.Get("CountryBlackList", "JM")
-                #msg = msg.Replace("%PLAYER%", Player.Name)
-                #msg = msg.Replace("%COUNTRY%", DataStore.Get("CountryBlackList", "UL"))
-                #Server.Broadcast(msg)
