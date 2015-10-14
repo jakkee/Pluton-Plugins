@@ -1,7 +1,7 @@
 __title__ = 'LevelSystem'
 __author__ = 'Jakkee'
 __about__ = 'Get extra resources'
-__version__ = '1.0'
+__version__ = '1.1'
 
 import clr
 clr.AddReferenceByPartialName("Pluton", "Assembly-CSharp-firstpass", "Assembly-CSharp")
@@ -20,17 +20,34 @@ except ImportError:
 level = [
     {
         "name": "levelui",
-        #"parent": "Overlay",
         "components":
         [
             {
                 "type": "UnityEngine.UI.Image",
-                "color": "0.1 0.1 0.1 0.4",
+                "color": "0.2 0.2 0.2 0.4",
             },
             {
                 "type": "RectTransform",
-                "anchormin": "0.7 0.5",
-                "anchormax": "0.995 0.85"
+                "anchormin": "0.65 0.041",
+                "anchormax": "0.82 0.146"
+            }
+        ]
+    },
+    {
+        #WoodCutting
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "Lv. [WCLEVEL]",
+                "fontSize": 15,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.05 0.69",
+                "anchormax": "0.35 1"
             }
         ]
     },
@@ -44,8 +61,24 @@ level = [
             },
             {
                 "type": "RectTransform",
-                "anchormin": "0.005 0.665",
-                "anchormax": "0.99 0.995"
+                "anchormin": "0.35 0.69",
+                "anchormax": "0.98 1"
+            }
+        ]
+    },
+    {
+        #Percentage
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.08 0.8 0.12 0.5",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.35 0.69",
+                "anchormax": "[W%] 1"
             }
         ]
     },
@@ -55,14 +88,32 @@ level = [
         [
             {
                 "type": "UnityEngine.UI.Text",
-                "text": "[WCStats]",
-                "fontSize": 20,
+                "text": "Woodcutting",
+                "fontSize": 15,
                 "align": "MiddleCenter",
             },
             {
                 "type": "RectTransform",
-                "anchormin": "0.005 0.665",
-                "anchormax": "0.99 0.995"
+                "anchormin": "0.35 0.69",
+                "anchormax": "0.98 1"
+            }
+        ]
+    },
+    {
+        #Mining
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "Lv. [MLEVEL]",
+                "fontSize": 15,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.05 0.35",
+                "anchormax": "0.35 0.64"
             }
         ]
     },
@@ -76,8 +127,24 @@ level = [
             },
             {
                 "type": "RectTransform",
-                "anchormin": "0.005 0.33",
-                "anchormax": "0.99 0.66"
+                "anchormin": "0.35 0.35",
+                "anchormax": "0.98 0.64"
+            }
+        ]
+    },
+    {
+        #Percentage
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.08 0.8 0.12 0.5",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.35 0.35",
+                "anchormax": "[M%] 0.64"
             }
         ]
     },
@@ -87,14 +154,32 @@ level = [
         [
             {
                 "type": "UnityEngine.UI.Text",
-                "text": "[MININGStats]",
-                "fontSize": 20,
+                "text": "Mining",
+                "fontSize": 15,
                 "align": "MiddleCenter",
             },
             {
                 "type": "RectTransform",
-                "anchormin": "0.005 0.33",
-                "anchormax": "0.99 0.66"
+                "anchormin": "0.35 0.35",
+                "anchormax": "0.98 0.64"
+            }
+        ]
+    },
+    {
+        #Skinning
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Text",
+                "text": "Lv. [SLEVEL]",
+                "fontSize": 15,
+                "align": "MiddleCenter",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.05 0",
+                "anchormax": "0.35 0.29"
             }
         ]
     },
@@ -108,8 +193,24 @@ level = [
             },
             {
                 "type": "RectTransform",
-                "anchormin": "0.005 0.005",
-                "anchormax": "0.99 0.325"
+                "anchormin": "0.35 0",
+                "anchormax": "0.98 0.29"
+            }
+        ]
+    },
+    {
+        #Percentage
+        "parent": "levelui",
+        "components":
+        [
+            {
+                "type": "UnityEngine.UI.Image",
+                "color": "0.08 0.8 0.12 0.5",
+            },
+            {
+                "type": "RectTransform",
+                "anchormin": "0.35 0",
+                "anchormax": "[S%] 0.29"
             }
         ]
     },
@@ -119,14 +220,14 @@ level = [
         [
             {
                 "type": "UnityEngine.UI.Text",
-                "text": "[SKININGStats]",
-                "fontSize": 20,
+                "text": "Skinning",
+                "fontSize": 15,
                 "align": "MiddleCenter",
             },
             {
                 "type": "RectTransform",
-                "anchormin": "0.005 0.005",
-                "anchormax": "0.99 0.325"
+                "anchormin": "0.35 0",
+                "anchormax": "0.98 0.29"
             }
         ]
     },
@@ -179,6 +280,8 @@ class LevelSystem:
             self.amounthandler(GatherEvent.ItemAmount, GatherEvent.Resource, GatherEvent.Gatherer, GatherEvent.Amount, "M", "MEXP")
         elif int(GatherEvent.ResourceDispenser.gatherType) == 2:
             self.amounthandler(GatherEvent.ItemAmount, GatherEvent.Resource, GatherEvent.Gatherer, GatherEvent.Amount, "S", "SEXP")
+        if DataStore.Get("PlayerData", GatherEvent.Gatherer.SteamID + "SHOWUI"):
+            self.ShowStats(GatherEvent.Gatherer)
 
     def amounthandler(self, itemamount, item, Player, amount, skill, skillexp):
         calc = DataStore.Get("PlayerData", Player.SteamID + skill) * 0.20
@@ -198,7 +301,6 @@ class LevelSystem:
                 level = DataStore.Get("PlayerData", Player.SteamID + skill) + 1
                 DataStore.Add("PlayerData", Player.SteamID + skill, level)
                 Player.Message("You have gained a new level!")
-                self.ShowStats(Player)
             else:
                 return
         else:
@@ -221,47 +323,52 @@ class LevelSystem:
         except:
             return 0
 
-    def ShowLevelUICallback(self, timer):
-        try:
-            timer.Kill()
-            data = timer.Args
-            playerID = data["PlayerID"]
-            Player = Server.Players[playerID]
-            CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("levelui"))
-        except:
-            pass
-
     def ShowStats(self, Player):
-        for timer in Plugin.GetParallelTimer("ShowLevelUI"):
-            if Server.Players[timer.Args["PlayerID"]].SteamID == Player.SteamID:
-                timer.Kill()
-        data = Plugin.CreateDict()
-        data["PlayerID"] = Player.GameID
         CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("levelui"))
-        wexp = str(self.expcalc(Player.SteamID, "WEXP"))
+        wexp = self.expcalc(Player.SteamID, "WEXP")
+        Wlevel = str(DataStore.Get("PlayerData", Player.SteamID + "W"))
         if wexp == "MaxLevel":
-            WStats = ("Woodcutting Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "W")) + " [Exp: Max Level Reached]")
+            Wpercentage = "0.98"
         else:
-            WStats = ("Woodcutting Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "W")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "WEXP")) + "/" + wexp + "]")
-        mexp = str(self.expcalc(Player.SteamID, "MEXP"))
+            percent = round(DataStore.Get("PlayerData", Player.SteamID + "WEXP")/wexp, 5)
+            Wpercentage = str((0.63 * percent) + 0.35)
+            Util.Log(str(percent) + " : " + Wpercentage)
+        Mlevel = str(DataStore.Get("PlayerData", Player.SteamID + "M"))
+        mexp = self.expcalc(Player.SteamID, "MEXP")
         if mexp == "MaxLevel":
-            MStats = ("Mining Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "M")) + " [Exp: Max level Reached]")
+            Mpercentage = "0.98"
         else:
-            MStats = ("Mining Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "M")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "MEXP")) + "/" + mexp + "]")
-        sexp = str(self.expcalc(Player.SteamID, "SEXP"))
+            percent = round(DataStore.Get("PlayerData", Player.SteamID + "MEXP")/mexp, 5)
+            Mpercentage = str((0.63 * percent) + 0.35)
+        Slevel = str(DataStore.Get("PlayerData", Player.SteamID + "S"))
+        sexp = self.expcalc(Player.SteamID, "SEXP")
         if sexp == "MaxLevel":
-            SStats = ("Skinning Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "S")) + " [Exp: Max level Reached]")
+            Spercentage = "0.98"
         else:
-            SStats = ("Skinning Level: " + str(DataStore.Get("PlayerData", Player.SteamID + "S")) + " [Exp: " + str(DataStore.Get("PlayerData", Player.SteamID + "SEXP")) + "/" + sexp + "]")
-        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", Facepunch.ObjectList(levels.Replace("[WCStats]", WStats).Replace("[MININGStats]", MStats).Replace("[SKININGStats]", SStats)))
-        Plugin.CreateParallelTimer("ShowLevelUI", 10000, data).Start()
+            percent = round(DataStore.Get("PlayerData", Player.SteamID + "SEXP")/sexp, 5)
+            Spercentage = str((0.63 * percent) + 0.35)
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "AddUI", Facepunch.ObjectList(levels.Replace("[WCLEVEL]", Wlevel)
+                                                                                                                                           .Replace("[MLEVEL]", Mlevel)
+                                                                                                                                           .Replace("[SLEVEL]", Slevel)
+                                                                                                                                           .Replace("[W%]", Wpercentage)
+                                                                                                                                           .Replace("[M%]", Mpercentage)
+                                                                                                                                           .Replace("[S%]", Spercentage)))
+
+    def On_PlayerWakeUp(self, Player):
+        CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("levelui"))
+        if DataStore.Get("PlayerData", Player.SteamID + "SHOWUI"):
+            self.ShowStats(Player)
 
     def stats(self, args, Player):
         if len(args) == 0:
-            if Player.Owner or Player.Admin or Player.Moderator:
-                Player.Message('/level set ["Players Name"] [skill] [Level]')
-                Player.Message('/level wipe - Clears all data!')
-            self.ShowStats(Player)
+            if DataStore.Get("PlayerData", Player.SteamID + "SHOWUI"):
+                DataStore.Remove("PlayerData", Player.SteamID + "SHOWUI")
+                Player.Message("Disabled stats")
+                CommunityEntity.ServerInstance.ClientRPCEx(Network.SendInfo(Player.basePlayer.net.connection), None, "DestroyUI", Facepunch.ObjectList("levelui"))
+            else:
+                DataStore.Add("PlayerData", Player.SteamID + "SHOWUI", True)
+                Player.Message("Enabled stats")
+                self.ShowStats(Player)
         else:
             if Player.Owner or Player.Admin or Player.Moderator:
                 if args[0] == "set":
